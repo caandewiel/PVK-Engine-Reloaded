@@ -6,3 +6,4 @@ build/
 checks.json
 cmake-build-debug/
 imgui.ini
+*.pvm
