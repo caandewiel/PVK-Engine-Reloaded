@@ -27,9 +27,8 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
+#include "../lib/asset/AssetHelper.hpp"
 #include "../lib/asset/Blueprint.hpp"
-#include "BinaryHelper.hpp"
-#include "glm/fwd.hpp"
 
 constexpr auto assimpFlags = aiProcess_OptimizeMeshes | aiProcess_GenNormals | aiProcess_FlipUVs;
 constexpr auto meshFlag = "MESH";
@@ -174,7 +173,7 @@ void loadMeshes(const aiScene *scene, const std::filesystem::path &destinationPa
         memcpy(meshBuffer.data(), vertexBuffer.data(), vertexBufferSize);
         memcpy(meshBuffer.data() + vertexBufferSize, indexBuffer.data(), indexBufferSize);
 
-        auto binaryBlob = pvk::binary::compress(std::move(meshBuffer));
+        auto binaryBlob = pvk::asset::compress(std::move(meshBuffer));
 
         nlohmann::json metadata;
         metadata["numberOfVertex"] = mesh->mNumVertices;
@@ -250,7 +249,7 @@ void loadNodes(const aiScene *scene, const std::filesystem::path &destinationPat
     const auto jsonContent = blueprint->toJson().dump();
     const uint32_t jsonContentSize = jsonContent.size();
 
-    const auto binaryBlobMatrices = pvk::binary::convertVectorToBinaryBlob(std::move(blueprint->matrices));
+    const auto binaryBlobMatrices = pvk::asset::convertVectorToBinary(std::move(blueprint->matrices));
     const uint32_t binaryBlobMatricesSize = binaryBlobMatrices.size();
 
     const auto destinationPathBlueprint = (destinationPath / stem).replace_extension("object");

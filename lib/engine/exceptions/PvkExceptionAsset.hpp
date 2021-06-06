@@ -3,8 +3,9 @@
 
 #include "PvkException.hpp"
 
-#include <fmt/format.h>
 #include <string>
+
+#include <fmt/format.h>
 
 namespace pvk
 {

@@ -9,48 +9,49 @@
 #include <utility>
 #include <vector>
 
+#include <absl/container/flat_hash_map.h>
+
 #include <lz4.h>
 
 #include <json.hpp>
 
+#include "../asset/AssetHelper.hpp"
 #include "../asset/Blueprint.hpp"
-#include "absl/container/flat_hash_map.h"
 
 namespace
 {
-template <typename T> T readFromInputFileStream(std::ifstream &stream)
+absl::flat_hash_map<uint32_t, std::shared_ptr<pvk::geometry::Node>> getNodeLookup(pvk::asset::Blueprint &blueprint)
 {
-    T result{};
-    stream.read(reinterpret_cast<char *>(&result), sizeof(T));
+    absl::flat_hash_map<uint32_t, std::shared_ptr<pvk::geometry::Node>> nodeLookup{};
 
-    return result;
+    for (auto &node : blueprint.nodes)
+    {
+        auto currentNode =
+            std::make_shared<pvk::geometry::Node>(blueprint.matrices[node.identifier], std::move(node.meshIndices));
+
+        if (node.identifier > -1)
+        {
+            currentNode->setParent(nodeLookup.at(node.identifier));
+        }
+
+        nodeLookup.insert(std::make_pair(node.identifier, std::move(currentNode)));
+    }
+
+    return nodeLookup;
 }
 
-nlohmann::json readJsonFromInputFileStream(std::ifstream &stream, size_t size)
+absl::flat_hash_map<uint32_t, std::unique_ptr<pvk::geometry::Mesh>> getMeshLookup(pvk::asset::Blueprint &blueprint,
+                                                                                  const std::filesystem::path &path)
 {
-    std::string content;
-    content.resize(size);
-    stream.read(content.data(), size);
+    absl::flat_hash_map<uint32_t, std::unique_ptr<pvk::geometry::Mesh>> meshLookup{};
 
-    return nlohmann::json::parse(content.begin(), content.end());
-}
+    for (size_t i = 0; i < blueprint.meshPaths.size(); i++)
+    {
+        auto mesh = std::make_unique<pvk::geometry::Mesh>(path.parent_path() / blueprint.meshPaths[i]);
+        meshLookup.insert(std::make_pair(i, std::move(mesh)));
+    }
 
-template <typename T> std::vector<T> convertBinaryBlobToVector(std::vector<char> &&binaryBlob)
-{
-    std::vector<T> data;
-    data.resize(binaryBlob.size() / sizeof(T));
-    memcpy(data.data(), binaryBlob.data(), binaryBlob.size());
-
-    return data;
-}
-
-template <typename T> std::vector<char> convertVectorToBinaryBlob(std::vector<T> &&data)
-{
-    std::vector<char> binaryBlob;
-    binaryBlob.resize(data.size() * sizeof(T));
-    memcpy(binaryBlob.data(), data.data(), binaryBlob.size());
-
-    return binaryBlob;
+    return meshLookup;
 }
 } // namespace
 
@@ -62,39 +63,15 @@ std::unique_ptr<geometry::Object> loadObject(const std::filesystem::path &path)
     inputFile.open(path, std::ios::binary);
     inputFile.seekg(0);
 
-    const auto metadataSize = readFromInputFileStream<uint32_t>(inputFile);
-    const auto blueprintJson = readJsonFromInputFileStream(inputFile, metadataSize);
-    const auto matricesSize = readFromInputFileStream<uint32_t>(inputFile);
-
-    std::vector<char> matricesBinaryBlob;
-    matricesBinaryBlob.resize(matricesSize);
-    inputFile.read(matricesBinaryBlob.data(), matricesSize);
+    const auto metadataSize = pvk::asset::readFromInputFileStream<uint32_t>(inputFile);
+    const auto blueprintJson = pvk::asset::readJsonFromInputFileStream(inputFile, metadataSize);
+    const auto matricesSize = pvk::asset::readFromInputFileStream<uint32_t>(inputFile);
 
     auto blueprint = pvk::asset::Blueprint::parseJson(blueprintJson);
-    blueprint.matrices = convertBinaryBlobToVector<glm::mat4>(std::move(matricesBinaryBlob));
+    blueprint.matrices = pvk::asset::convertBinaryToVector<glm::mat4>(
+        pvk::asset::readFromInputFileStream<std::vector<char>>(inputFile, matricesSize));
 
-    absl::flat_hash_map<uint32_t, std::shared_ptr<geometry::Node>> nodeLookup{};
-
-    for (auto &node : blueprint.nodes)
-    {
-        auto currentNode = std::make_shared<geometry::Node>(blueprint.matrices[node.identifier], std::move(node.meshIndices));
-
-        if (node.identifier > -1)
-        {
-            currentNode->setParent(nodeLookup.at(node.identifier));
-        }
-
-        nodeLookup.insert(std::make_pair(node.identifier, std::move(currentNode)));
-    }
-
-    absl::flat_hash_map<uint32_t, std::unique_ptr<geometry::Mesh>> meshLookup{};
-
-    for (size_t i = 0; i < blueprint.meshPaths.size(); i++) {
-        auto mesh = std::make_unique<geometry::Mesh>(path.parent_path() / blueprint.meshPaths[i]);
-        meshLookup.insert(std::make_pair(i, std::move(mesh)));
-    }
-
-    return std::make_unique<geometry::Object>(std::move(meshLookup), std::move(nodeLookup));
+    return std::make_unique<geometry::Object>(getMeshLookup(blueprint, path), getNodeLookup(blueprint));
 }
 
 std::pair<std::vector<geometry::Vertex>, std::vector<uint32_t>> loadMeshBuffers(const std::filesystem::path &path)
@@ -103,31 +80,19 @@ std::pair<std::vector<geometry::Vertex>, std::vector<uint32_t>> loadMeshBuffers(
     inputFile.open(path, std::ios::binary);
     inputFile.seekg(0);
 
-    std::string flags;
-    flags.resize(4);
-    inputFile.read(flags.data(), 4 * sizeof(char));
+    const auto flags = pvk::asset::readFromInputFileStream<std::vector<char>>(inputFile, 4);
 
-    auto metadataSize = readFromInputFileStream<uint32_t>(inputFile);
-
-    std::string metadataContent;
-    metadataContent.resize(metadataSize);
-    inputFile.read(metadataContent.data(), metadataSize);
-
-    auto metadata = nlohmann::json::parse(metadataContent.begin(), metadataContent.end());
+    const auto metadataSize = pvk::asset::readFromInputFileStream<uint32_t>(inputFile);
+    const auto metadataContent = pvk::asset::readFromInputFileStream<std::vector<char>>(inputFile, metadataSize);
+    const auto metadata = nlohmann::json::parse(metadataContent.begin(), metadataContent.end());
 
     const auto vertexSizeOriginal = metadata["vertexSizeOriginal"].get<uint32_t>();
     const auto indexSizeOriginal = metadata["indexSizeOriginal"].get<uint32_t>();
     const auto targetSize = vertexSizeOriginal + indexSizeOriginal;
     const auto compressedSize = metadata["compressedSize"].get<uint32_t>();
 
-    std::string binaryBlob;
-    binaryBlob.resize(compressedSize);
-    inputFile.read(binaryBlob.data(), compressedSize);
-
-    std::string output;
-    output.resize(targetSize);
-
-    LZ4_decompress_safe(binaryBlob.data(), output.data(), compressedSize, targetSize);
+    auto binaryBlob = pvk::asset::readFromInputFileStream<std::vector<char>>(inputFile, compressedSize);
+    const auto output = pvk::asset::uncompress(std::move(binaryBlob), targetSize);
 
     std::vector<geometry::Vertex> vertexBuffer;
     std::vector<uint32_t> indexBuffer;

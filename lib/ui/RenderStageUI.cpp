@@ -46,7 +46,7 @@ RenderStageUI::RenderStageUI(const vulkan::CommandPool &commandPool, const vulka
 
     ImGui_ImplVulkan_Init(&initInfo, renderPass.getRenderPass());
 
-    helper::executeOneTimeCommandBuffer(commandPool, [](const command_buffer::CommandBuffer &commandBuffer) {
+    vulkan::executeOneTimeCommandBuffer(commandPool, [](const command_buffer::CommandBuffer &commandBuffer) {
         ImGui_ImplVulkan_CreateFontsTexture(commandBuffer.getCommandBuffer(0));
     });
 

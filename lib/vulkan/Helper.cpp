@@ -7,7 +7,7 @@
 #include <memory>
 #include <vulkan/vulkan.hpp>
 
-namespace pvk::helper
+namespace pvk::vulkan
 {
 void assertVulkan(const vk::Result &result, std::string &&message)
 {

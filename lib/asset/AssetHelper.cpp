@@ -1,9 +1,18 @@
-#include "BinaryHelper.hpp"
+#include "AssetHelper.hpp"
 
 #include <lz4.h>
 
-namespace pvk::binary
+namespace pvk::asset
 {
+nlohmann::json readJsonFromInputFileStream(std::ifstream &stream, size_t size)
+{
+    std::string content;
+    content.resize(size);
+    stream.read(content.data(), size);
+
+    return nlohmann::json::parse(content.begin(), content.end());
+}
+
 std::vector<char> compress(std::vector<char> &&uncompressedData)
 {
     const auto compressedBound = LZ4_compressBound(uncompressedData.size());
@@ -18,4 +27,14 @@ std::vector<char> compress(std::vector<char> &&uncompressedData)
 
     return compressedData;
 }
-} // namespace pvk::binary
+
+std::vector<char> uncompress(std::vector<char> &&compressedData, size_t uncompressedSize)
+{
+    std::vector<char> output;
+    output.resize(uncompressedSize);
+
+    LZ4_decompress_safe(compressedData.data(), output.data(), compressedData.size(), uncompressedSize);
+
+    return output;
+}
+} // namespace pvk::asset

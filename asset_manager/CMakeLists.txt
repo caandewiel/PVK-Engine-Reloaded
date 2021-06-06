@@ -15,6 +15,6 @@ set(LZ4_SRCS ${LZ4_DIR}lz4frame.c ${LZ4_DIR}xxhash.c ${PRG_DIR}bench.c ${PRG_DIR
 
 target_sources(lz4 PRIVATE ${LZ4_SRCS_LIB} ${LZ4_SRCS})
 
-add_executable(${PROJECT_NAME} main.cpp BinaryHelper.hpp BinaryHelper.cpp)
+add_executable(${PROJECT_NAME} main.cpp)
 target_compile_options(pvk_reloaded_asset_manager PRIVATE -Wall -Wextra -Wshadow -Wno-unused-parameter -Werror)
 target_link_libraries(${PROJECT_NAME} assimp fmt lz4 json glm pvk_reloaded_asset)

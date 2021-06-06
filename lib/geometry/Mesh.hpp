@@ -2,6 +2,7 @@
 #define MESH_HPP
 
 #include "../vulkan/Buffer.hpp"
+#include <filesystem>
 #include <memory>
 #include <vector>
 
@@ -12,31 +13,30 @@ namespace pvk::geometry
 class Mesh
 {
 public:
-    explicit Mesh(std::vector<Vertex> &&vertices);
-    explicit Mesh(const std::string &path);
+    explicit Mesh(const std::filesystem::path &path);
 
     [[nodiscard]] const vulkan::Buffer &getVertexBuffer() const;
     [[nodiscard]] const vulkan::Buffer &getIndexBuffer() const;
 
     [[nodiscard]] size_t getSize() const
     {
-        return m_vertices.size() * sizeof(Vertex);
+        return m_numVertices * sizeof(Vertex);
     }
 
     [[nodiscard]] size_t getNumberOfVertices() const
     {
-        return m_vertices.size();
+        return m_numVertices;
     }
 
     [[nodiscard]] size_t getNumberOfIndices() const
     {
-        return m_indices.size();
+        return m_numIndices;
     }
 
 private:
-    std::vector<Vertex> m_vertices;
+    uint32_t m_numVertices;
     std::unique_ptr<vulkan::Buffer> m_vertexBuffer;
-    std::vector<uint32_t> m_indices;
+    uint32_t m_numIndices;
     std::unique_ptr<vulkan::Buffer> m_indexBuffer;
 };
 } // namespace pvk::geometry

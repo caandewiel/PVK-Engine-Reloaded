@@ -103,7 +103,7 @@ uint32_t RenderPipeline::getNextImageFromSwapChain()
     const auto &logicalDevice = graphics::get()->getDevice().getLogicalDevice();
     const auto waitForFences =
         logicalDevice.waitForFences(1, &m_renderFence->getFence(), VK_TRUE, std::numeric_limits<uint64_t>::max());
-    pvk::helper::assertVulkan(waitForFences, "Could not wait for rendering fence.");
+    pvk::vulkan::assertVulkan(waitForFences, "Could not wait for rendering fence.");
 
     logicalDevice.resetFences(m_renderFence->getFence());
 
@@ -114,7 +114,7 @@ uint32_t RenderPipeline::getNextImageFromSwapChain()
                                                                         m_presentSemaphore->getSemaphore(),
                                                                         nullptr);
 
-        return pvk::helper::assertVulkan(acquireNextImage, "Could not acquire next message.");
+        return pvk::vulkan::assertVulkan(acquireNextImage, "Could not acquire next message.");
     }
     catch (const vk::OutOfDateKHRError &exception)
     {
@@ -146,7 +146,7 @@ void RenderPipeline::presentGraphicsQueue(uint32_t imageIndex)
     presentInfo.setWaitSemaphores(m_renderSemaphore->getSemaphore());
     presentInfo.setImageIndices(imageIndex);
 
-    pvk::helper::assertVulkan(graphics::get()->getDevice().getGraphicsQueue().presentKHR(presentInfo),
+    pvk::vulkan::assertVulkan(graphics::get()->getDevice().getGraphicsQueue().presentKHR(presentInfo),
                               "Could not present image to SwapChain.");
 }
 } // namespace pvk::engine
