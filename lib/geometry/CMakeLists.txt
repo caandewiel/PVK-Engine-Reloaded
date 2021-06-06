@@ -3,5 +3,5 @@ file(GLOB SOURCE_LIST CONFIGURE_DEPENDS "*.cpp")
 
 add_library(pvk_reloaded_geometry ${SOURCE_LIST} ${HEADER_LIST})
 target_compile_options(pvk_reloaded_geometry PRIVATE -Wall -Wextra -Wshadow -Wno-unused-parameter -Werror)
-target_link_libraries(pvk_reloaded_geometry glm Vulkan::Vulkan pvk_reloaded_vulkan pvk_reloaded_engine)
+target_link_libraries(pvk_reloaded_geometry glm Vulkan::Vulkan pvk_reloaded_vulkan pvk_reloaded_engine absl::flat_hash_map)
 set_target_properties(pvk_reloaded_geometry PROPERTIES LINKER_LANGUAGE CXX)

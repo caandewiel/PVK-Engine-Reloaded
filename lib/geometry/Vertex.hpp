@@ -1,7 +1,6 @@
 #ifndef VERTEX_HPP
 #define VERTEX_HPP
 
-#include "Mesh.hpp"
 #include "glm/fwd.hpp"
 #include <array>
 #include <cstddef>

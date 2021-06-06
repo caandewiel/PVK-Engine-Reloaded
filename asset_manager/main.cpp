@@ -1,15 +1,20 @@
 // Insipred by: https://vkguide.dev/docs/extra-chapter/asset_system/
 
-#include "assimp/mesh.h"
 #include <array>
 #include <cstring>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <memory>
 #include <span>
+#include <streambuf>
+#include <utility>
 #include <vector>
 
+#include <absl/container/flat_hash_map.h>
+
 #include <assimp/Importer.hpp>
+#include <assimp/mesh.h>
 #include <assimp/postprocess.h>
 #include <assimp/scene.h>
 
@@ -20,91 +25,106 @@
 #include <json.hpp>
 
 #include <glm/glm.hpp>
+#include <glm/gtc/type_ptr.hpp>
+
+#include "../lib/asset/Blueprint.hpp"
+#include "BinaryHelper.hpp"
+#include "glm/fwd.hpp"
 
 constexpr auto assimpFlags = aiProcess_OptimizeMeshes | aiProcess_GenNormals | aiProcess_FlipUVs;
+constexpr auto meshFlag = "MESH";
+// constexpr auto textureFlag = "TEX ";
 
 struct Vertex
 {
-    glm::vec3 position;
-    glm::vec3 normal;
-    glm::vec3 color;
+    glm::vec3 position{};
+    glm::vec3 normal{};
+    glm::vec3 color{};
 };
 
-struct AssetFile {
-    std::string metadata;
-    std::vector<char> binaryBlob;
+struct Object
+{
+    absl::flat_hash_map<uint32_t, pvk::asset::NodeInfo> nodeLookup;
+    std::vector<glm::mat4> matrices;
 };
 
 namespace
 {
-void writeJsonToBinary()
-{
-    nlohmann::json metadata;
-    metadata["nVertex"] = 3;
-    metadata["binaryVertexSize"] = 12;
-    auto content = metadata.dump();
+// void loadJson()
+// {
+//     {
+//         std::ifstream inputFile;
+//         inputFile.open(fmt::format("{}/{}.object", "/Users/christian", "walk/walk"), std::ios::binary);
+//         inputFile.seekg(0);
 
-    auto compressedBound = LZ4_compressBound(content.size());
-    std::vector<char> binaryBlob;
-    binaryBlob.resize(compressedBound);
-    int compressedSize = LZ4_compress_default(
-        content.data(), binaryBlob.data(), static_cast<int>(content.size()), static_cast<int>(compressedBound));
-    binaryBlob.resize(compressedSize);
+//         uint32_t metadataSize = 0;
+//         inputFile.read(reinterpret_cast<char *>(&metadataSize), sizeof(uint32_t));
 
-    std::ofstream binaryFile;
-    binaryFile.open("/Users/christian/test.bin", std::ios::binary | std::ios::out);
+//         std::string metadataContent;
+//         metadataContent.resize(metadataSize);
+//         inputFile.read(metadataContent.data(), metadataSize);
 
-    uint32_t length = content.size();
-    binaryFile.write(reinterpret_cast<const char *>(&length), sizeof(uint32_t));
-    binaryFile.write(reinterpret_cast<const char *>(&compressedSize), sizeof(uint32_t));
-    binaryFile.write(binaryBlob.data(), binaryBlob.size());
-    binaryFile.close();
-}
+//         auto metadata = nlohmann::json::parse(metadataContent.begin(), metadataContent.end());
 
-void loadJson()
-{
-    std::ifstream inputFile;
-    inputFile.open(fmt::format("{}/{}.pvm", "/Users/christian", "Beta_Surface"), std::ios::binary);
-    inputFile.seekg(0);
+//         uint32_t matricesSize = 0;
+//         inputFile.read(reinterpret_cast<char *>(&matricesSize), sizeof(uint32_t));
 
-    uint32_t metadataSize = 0;
-    inputFile.read(reinterpret_cast<char *>(&metadataSize), sizeof(uint32_t));
+//         std::vector<char> matricesBinaryBlob;
+//         matricesBinaryBlob.resize(matricesSize);
+//         inputFile.read(matricesBinaryBlob.data(), matricesSize);
 
-    std::string metadataContent;
-    metadataContent.resize(metadataSize);
-    inputFile.read(metadataContent.data(), metadataSize);
+//         auto blueprint = pvk::asset::Blueprint::parseJson(metadata);
+//         blueprint.matrices = pvk::binary::convertBinaryBlobToVector<glm::mat4>(std::move(matricesBinaryBlob));
 
-    auto metadata = nlohmann::json::parse(metadataContent.begin(), metadataContent.end());
+//         std::cout << metadata.dump() << std::endl;
+//     }
 
-    const auto vertexSizeOriginal = metadata["vertexSizeOriginal"].get<uint32_t>();
-    const auto indexSizeOriginal = metadata["indexSizeOriginal"].get<uint32_t>();
-    const auto targetSize = vertexSizeOriginal + indexSizeOriginal;
-    const auto compressedSize = metadata["compressedSize"].get<uint32_t>();
+//     std::ifstream inputFile;
+//     inputFile.open(fmt::format("{}/{}.mesh", "/Users/christian", "walk/Beta_Surface"), std::ios::binary);
+//     inputFile.seekg(0);
 
-    std::string binaryBlob;
-    binaryBlob.resize(targetSize);
-    inputFile.read(binaryBlob.data(), compressedSize);
+//     std::string flags;
+//     flags.resize(4);
+//     inputFile.read(flags.data(), 4 * sizeof(char));
 
-    std::string output;
-    output.resize(targetSize);
+//     std::cout << flags.c_str() << "\n";
 
-    LZ4_decompress_safe(binaryBlob.data(), output.data(), compressedSize, targetSize);
+//     uint32_t metadataSize = 0;
+//     inputFile.read(reinterpret_cast<char *>(&metadataSize), sizeof(uint32_t));
 
-    std::vector<char> vertexBuffer;
-    std::vector<char> indexBuffer;
-    vertexBuffer.resize(vertexSizeOriginal);
-    indexBuffer.resize(indexSizeOriginal);
-    memcpy(vertexBuffer.data(), output.data(), vertexSizeOriginal);
-    memcpy(indexBuffer.data(), output.data() + vertexSizeOriginal, indexSizeOriginal);
-    auto vertices = std::span(reinterpret_cast<Vertex *>(vertexBuffer.data()), vertexSizeOriginal / sizeof(Vertex));
-    auto indices = std::span(reinterpret_cast<uint32_t *>(indexBuffer.data()), indexSizeOriginal / sizeof(uint32_t));
-    auto vertex = vertices[0];
+//     std::string metadataContent;
+//     metadataContent.resize(metadataSize);
+//     inputFile.read(metadataContent.data(), metadataSize);
 
-    std::cout << fmt::format("{}, {}, {}", vertex.position[0], vertex.position[1], vertex.position[2]) << std::endl;
-    std::cout << fmt::format("{}, {}, {}", indices[0], indices[1], indices[2]) << std::endl;
-}
+//     auto metadata = nlohmann::json::parse(metadataContent.begin(), metadataContent.end());
 
-void loadMeshes(const aiScene *scene)
+//     const auto vertexSizeOriginal = metadata["vertexSizeOriginal"].get<uint32_t>();
+//     const auto indexSizeOriginal = metadata["indexSizeOriginal"].get<uint32_t>();
+//     const auto targetSize = vertexSizeOriginal + indexSizeOriginal;
+//     const auto compressedSize = metadata["compressedSize"].get<uint32_t>();
+
+//     std::string binaryBlob;
+//     binaryBlob.resize(targetSize);
+//     inputFile.read(binaryBlob.data(), compressedSize);
+
+//     std::string output;
+//     output.resize(targetSize);
+
+//     LZ4_decompress_safe(binaryBlob.data(), output.data(), compressedSize, targetSize);
+
+//     std::vector<char> vertexBuffer;
+//     std::vector<char> indexBuffer;
+//     vertexBuffer.resize(vertexSizeOriginal);
+//     indexBuffer.resize(indexSizeOriginal);
+//     memcpy(vertexBuffer.data(), output.data(), vertexSizeOriginal);
+//     memcpy(indexBuffer.data(), output.data() + vertexSizeOriginal, indexSizeOriginal);
+//     auto vertices = std::span(reinterpret_cast<Vertex *>(vertexBuffer.data()), vertexSizeOriginal / sizeof(Vertex));
+//     auto indices = std::span(reinterpret_cast<uint32_t *>(indexBuffer.data()), indexSizeOriginal / sizeof(uint32_t));
+
+//     std::cout << vertices[0].position.x << "\n";
+// }
+
+void loadMeshes(const aiScene *scene, const std::filesystem::path &destinationPath)
 {
     const auto meshes = std::span(scene->mMeshes, scene->mNumMeshes);
 
@@ -130,7 +150,10 @@ void loadMeshes(const aiScene *scene)
                 vertex.normal = {normals[i].x, normals[i].y, normals[i].z};
             }
 
-            vertex.color = {1.0F, 0.0F, 0.0F};
+            if (mesh->HasVertexColors(0))
+            {
+                vertex.color = {colors[i].r, colors[i].g, colors[i].b};
+            }
 
             vertexBuffer.emplace_back(vertex);
         }
@@ -138,16 +161,9 @@ void loadMeshes(const aiScene *scene)
         for (const auto &face : faces)
         {
             const auto indices = std::span(face.mIndices, face.mNumIndices);
-
-            for (const auto index : indices)
-            {
-                indexBuffer.emplace_back(static_cast<uint32_t>(index));
-            }
+            indexBuffer.insert(indexBuffer.end(), indices.begin(), indices.end());
         }
 
-        const auto &vertex = vertexBuffer[0];
-        std::cout << fmt::format("{} {} {}", vertex.position[0], vertex.position[1], vertex.position[2]) << std::endl;
-        std::cout << fmt::format("{} {} {}\n", indexBuffer[0], indexBuffer[1], indexBuffer[2]);
         const auto vertexBufferSize = vertexBuffer.size() * sizeof(Vertex);
         const auto indexBufferSize = indexBuffer.size() * sizeof(uint32_t);
         const auto totalSize = vertexBufferSize + indexBufferSize;
@@ -158,33 +174,96 @@ void loadMeshes(const aiScene *scene)
         memcpy(meshBuffer.data(), vertexBuffer.data(), vertexBufferSize);
         memcpy(meshBuffer.data() + vertexBufferSize, indexBuffer.data(), indexBufferSize);
 
-        auto compressedBound = LZ4_compressBound(totalSize);
-        std::vector<char> binaryBlob;
-        binaryBlob.resize(compressedBound);
-        int compressedSize = LZ4_compress_default(meshBuffer.data(),
-                                                  binaryBlob.data(),
-                                                  static_cast<int>(meshBuffer.size()),
-                                                  static_cast<int>(compressedBound));
-        binaryBlob.resize(compressedSize);
+        auto binaryBlob = pvk::binary::compress(std::move(meshBuffer));
 
         nlohmann::json metadata;
         metadata["numberOfVertex"] = mesh->mNumVertices;
         metadata["numberOfIndex"] = indexBuffer.size();
         metadata["vertexSizeOriginal"] = vertexBufferSize;
         metadata["indexSizeOriginal"] = indexBufferSize;
-        metadata["compressedSize"] = compressedSize;
+        metadata["compressedSize"] = binaryBlob.size();
         auto metadataContent = metadata.dump();
 
         std::ofstream binaryFile;
-        binaryFile.open(fmt::format("{}/{}.pvm", "/Users/christian", mesh->mName.C_Str()), std::ios::binary | std::ios::out);
+        const auto destinationPathMesh = (destinationPath / mesh->mName.C_Str()).replace_extension("mesh");
+        binaryFile.open(destinationPathMesh, std::ios::binary | std::ios::out);
+
+        std::cout << "Written mesh to " << destinationPathMesh << "\n";
 
         auto metadataSize = static_cast<uint32_t>(metadataContent.size());
+        binaryFile.write(meshFlag, 4 * sizeof(char));
         binaryFile.write(reinterpret_cast<const char *>(&metadataSize), sizeof(uint32_t));
         binaryFile.write(metadataContent.data(), metadataSize);
         binaryFile.write(binaryBlob.data(), binaryBlob.size());
 
         binaryFile.close();
     }
+}
+
+void loadNode(const aiScene *scene,
+              const aiNode *node,
+              const std::shared_ptr<pvk::asset::Blueprint> &blueprint,
+              int32_t parentIndex = -1)
+{
+    const auto currentIndex = blueprint->matrices.size();
+    const auto children = std::span(node->mChildren, node->mNumChildren);
+
+    pvk::asset::NodeInfo currentNode;
+    currentNode.identifier = currentIndex;
+    currentNode.name = node->mName.C_Str();
+    currentNode.parent = parentIndex;
+
+    glm::mat4 modelMatrix{};
+
+    for (size_t y = 0; y < 4; y++)
+    {
+        for (size_t x = 0; x < 4; x++)
+        {
+            modelMatrix[y][x] = node->mTransformation[x][y];
+        }
+    }
+
+    for (size_t i = 0; i < node->mNumMeshes; i++)
+    {
+        currentNode.meshIndices.emplace_back(node->mMeshes[i]);
+    }
+
+    blueprint->nodes.emplace_back(std::move(currentNode));
+    blueprint->matrices.emplace_back(modelMatrix);
+
+    for (const auto &child : children)
+    {
+        loadNode(scene, child, blueprint, currentIndex);
+    }
+}
+
+void loadNodes(const aiScene *scene, const std::filesystem::path &destinationPath, const std::filesystem::path &stem)
+{
+    auto blueprint = std::make_shared<pvk::asset::Blueprint>();
+    loadNode(scene, scene->mRootNode, blueprint);
+
+    const auto meshes = std::span(scene->mMeshes, scene->mNumMeshes);
+    for (const auto &mesh : meshes) {
+        blueprint->meshPaths.emplace_back(std::filesystem::path(mesh->mName.C_Str()).replace_extension(".mesh"));
+    }
+
+    const auto jsonContent = blueprint->toJson().dump();
+    const uint32_t jsonContentSize = jsonContent.size();
+
+    const auto binaryBlobMatrices = pvk::binary::convertVectorToBinaryBlob(std::move(blueprint->matrices));
+    const uint32_t binaryBlobMatricesSize = binaryBlobMatrices.size();
+
+    const auto destinationPathBlueprint = (destinationPath / stem).replace_extension("object");
+
+    std::ofstream binaryFile;
+    binaryFile.open(destinationPathBlueprint);
+    binaryFile.write(reinterpret_cast<const char *>(&jsonContentSize), sizeof(uint32_t));
+    binaryFile.write(jsonContent.data(), jsonContent.size());
+    binaryFile.write(reinterpret_cast<const char *>(&binaryBlobMatricesSize), sizeof(uint32_t));
+    binaryFile.write(binaryBlobMatrices.data(), binaryBlobMatrices.size());
+    binaryFile.close();
+
+    std::cout << "Written blueprint to " << destinationPathBlueprint << "\n";
 }
 } // namespace
 
@@ -202,7 +281,14 @@ int main(int argc, char *argv[])
 
     Assimp::Importer importer;
     const auto *const scene = importer.ReadFile(filePath.string(), assimpFlags);
-    loadMeshes(scene);
+
+    const auto destinationPath = filePath.parent_path() / filePath.stem();
+
+    std::cout << "Exporting converted files to " << destinationPath << "\n";
+    std::filesystem::create_directory(destinationPath);
+
+    loadMeshes(scene, destinationPath);
+    loadNodes(scene, destinationPath, filePath.stem());
     // writeJsonToBinary();
-    loadJson();
+    // loadJson();
 }

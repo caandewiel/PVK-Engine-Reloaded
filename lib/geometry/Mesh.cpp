@@ -37,14 +37,9 @@ Mesh::Mesh(std::vector<Vertex> &&vertices) : m_vertices(std::move(vertices))
 Mesh::Mesh(const std::string &path)
 {
     pvk::log(fmt::format("Loading mesh {}", path));
-    auto buffers = pvk::io::loadVertexBinary(path);
-    auto vertices = std::span(reinterpret_cast<pvk::geometry::Vertex *>(buffers.first.data()),
-                              buffers.first.size() / sizeof(pvk::geometry::Vertex));
-    auto indices =
-        std::span(reinterpret_cast<uint32_t *>(buffers.second.data()), buffers.second.size() / sizeof(uint32_t));
-
-    m_vertices.insert(m_vertices.end(), vertices.begin(), vertices.end());
-    m_indices.insert(m_indices.end(), indices.begin(), indices.end());
+    auto [vertices, indices] = pvk::io::loadMeshBuffers(path);
+    m_vertices = std::move(vertices);
+    m_indices = std::move(indices);
 
     pvk::log(fmt::format("Mesh has {} vertices and {} indices\n", getNumberOfVertices(), getNumberOfIndices()));
 
@@ -70,7 +65,7 @@ Mesh::Mesh(const std::string &path)
     {
         vk::BufferCreateInfo indexBufferCreateInfo{};
         indexBufferCreateInfo.setUsage(vk::BufferUsageFlagBits::eIndexBuffer);
-        indexBufferCreateInfo.setSize(m_vertices.size() * sizeof(uint32_t));
+        indexBufferCreateInfo.setSize(m_indices.size() * sizeof(uint32_t));
 
         VmaAllocationCreateInfo indexAllocationCreateInfo = {};
         indexAllocationCreateInfo.usage = VMA_MEMORY_USAGE_CPU_TO_GPU;
