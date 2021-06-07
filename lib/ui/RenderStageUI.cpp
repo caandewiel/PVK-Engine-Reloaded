@@ -9,6 +9,7 @@
 
 #include <array>
 #include <memory>
+#include <utility>
 #include <vulkan/vulkan.hpp>
 
 namespace pvk::ui
@@ -73,6 +74,10 @@ void RenderStageUI::render(const command_buffer::CommandBuffer &commandBuffer) c
     m_logWidget->draw();
     m_overlayWidget->draw();
 
+    for (const auto &[_, widget] : m_widgets) {
+        widget->draw();
+    }
+
     ImGui::Render();
 
     ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer.getCommandBuffer(0));
@@ -81,6 +86,11 @@ void RenderStageUI::render(const command_buffer::CommandBuffer &commandBuffer) c
 void RenderStageUI::log(const std::string &text)
 {
     m_logWidget->addLog(text.c_str());
+}
+
+void RenderStageUI::registerWidget(const std::string &identifier, std::unique_ptr<Widget> &&widget) 
+{
+    m_widgets.insert(std::make_pair(identifier, std::move(widget)));
 }
 
 LogWidget &RenderStageUI::getLogger() const

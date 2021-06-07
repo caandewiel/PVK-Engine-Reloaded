@@ -11,8 +11,8 @@
 
 namespace pvk::geometry
 {
-Node::Node(const glm::mat4 &matrix, std::vector<std::weak_ptr<Mesh>> &&meshes)
-    : m_matrix(matrix), m_meshes(std::move(meshes))
+Node::Node(std::string &&name, const glm::mat4 &matrix, std::vector<std::weak_ptr<Mesh>> &&meshes)
+    : m_name(std::move(name)), m_matrix(matrix), m_meshes(std::move(meshes))
 {
 }
 
@@ -24,6 +24,16 @@ bool Node::hasParent() const
 bool Node::hasMesh() const
 {
     return !m_meshes.empty();
+}
+
+const std::string& Node::getName() const
+{
+    return m_name;
+}
+
+const std::vector<std::weak_ptr<Node>>& Node::getChildren() const
+{
+    return m_children;
 }
 
 const Node &Node::getParent() const

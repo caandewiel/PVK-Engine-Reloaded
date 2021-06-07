@@ -50,6 +50,8 @@ public:
     [[nodiscard]] const vulkan::Pipeline &getPipeline() const;
     [[nodiscard]] const ui::RenderStageUI &getRenderStageUI() const;
 
+    void registerWidget(const std::string &identifier, std::unique_ptr<ui::Widget> &&widget);
+
 private:
     std::unique_ptr<vulkan::RenderPass> m_renderPass{};
     std::unique_ptr<vulkan::CommandPool> m_commandPool{};

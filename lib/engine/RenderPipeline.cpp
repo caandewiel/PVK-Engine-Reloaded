@@ -98,6 +98,11 @@ const ui::RenderStageUI& RenderPipeline::getRenderStageUI() const
     return *m_renderStageUI;
 }
 
+void RenderPipeline::registerWidget(const std::string &identifier, std::unique_ptr<ui::Widget> &&widget) 
+{
+    m_renderStageUI->registerWidget(identifier, std::move(widget));
+}
+
 uint32_t RenderPipeline::getNextImageFromSwapChain()
 {
     const auto &logicalDevice = graphics::get()->getDevice().getLogicalDevice();

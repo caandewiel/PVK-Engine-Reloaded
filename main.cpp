@@ -12,8 +12,10 @@
 #include "lib/engine/RenderPipeline.hpp"
 #include "lib/engine/RenderStageBase.hpp"
 #include "lib/geometry/Mesh.hpp"
+#include "lib/geometry/Object.hpp"
 #include "lib/geometry/Vertex.hpp"
 #include "lib/ui/RenderStageUI.hpp"
+#include "lib/ui/TreeWidget.hpp"
 #include "lib/vulkan/CommandBuffer.hpp"
 #include "lib/vulkan/Pipeline.hpp"
 
@@ -30,6 +32,11 @@ public:
             pvk::graphics::get()->getRenderPipeline<pvk::engine::RenderPipeline>().getRenderPass(),
             "/Users/christian/CLionProjects/pvk-reloaded/shaders/triangle.vert.spv",
             "/Users/christian/CLionProjects/pvk-reloaded/shaders/triangle.frag.spv");
+    }
+
+    const pvk::geometry::Object &getObject()
+    {
+        return *m_object;
     }
 
     void render(const pvk::command_buffer::CommandBuffer &commandBuffer) const override
@@ -52,6 +59,10 @@ public:
     {
         m_renderStageMesh = std::make_unique<RenderStageMesh>();
         m_renderStageMesh->init();
+
+        auto treeWidget = std::make_unique<pvk::ui::TreeWidget>();
+        treeWidget->setContent(m_renderStageMesh->getObject());
+        registerWidget("objectOverview", std::move(treeWidget));
     }
 
     void render(const pvk::command_buffer::CommandBuffer &commandBuffer)

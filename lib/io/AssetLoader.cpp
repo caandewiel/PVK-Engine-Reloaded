@@ -37,7 +37,7 @@ absl::flat_hash_map<uint32_t, std::shared_ptr<pvk::geometry::Node>> getNodeLooku
         }
 
         auto currentNode =
-            std::make_shared<pvk::geometry::Node>(blueprint.matrices[node.identifier], std::move(meshes));
+            std::make_shared<pvk::geometry::Node>(std::move(node.name), blueprint.matrices[node.identifier], std::move(meshes));
 
         if (node.parent > -1)
         {

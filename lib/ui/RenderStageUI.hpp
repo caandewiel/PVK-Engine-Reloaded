@@ -9,6 +9,7 @@
 #include <absl/container/flat_hash_map.h>
 #include <cstdarg>
 #include <cstdio>
+#include <memory>
 #include <sstream>
 #include <stdexcept>
 #include <string>
@@ -25,8 +26,8 @@ public:
     ~RenderStageUI() override;
 
     void render(const command_buffer::CommandBuffer &commandBuffer) const override;
-
     void log(const std::string &text);
+    void registerWidget(const std::string &identifier, std::unique_ptr<Widget> &&widget);
 
     [[nodiscard]] LogWidget &getLogger() const;
     [[nodiscard]] OverlayWidget &getOverlayWidget() const;
