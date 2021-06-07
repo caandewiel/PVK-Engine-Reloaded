@@ -11,8 +11,8 @@
 
 namespace pvk::geometry
 {
-Node::Node(const glm::mat4 &matrix, std::vector<uint32_t> &&meshIndices)
-    : m_matrix(matrix), m_meshIndices(std::move(meshIndices))
+Node::Node(const glm::mat4 &matrix, std::vector<std::weak_ptr<Mesh>> &&meshes)
+    : m_matrix(matrix), m_meshes(std::move(meshes))
 {
 }
 
@@ -23,7 +23,7 @@ bool Node::hasParent() const
 
 bool Node::hasMesh() const
 {
-    return !m_meshIndices.empty();
+    return !m_meshes.empty();
 }
 
 const Node &Node::getParent() const
@@ -36,14 +36,19 @@ const Node &Node::getParent() const
     return *m_parent.lock();
 }
 
-const std::vector<uint32_t> &Node::getMeshIndices() const
+Node& Node::getParent() 
+{
+    return *m_parent.lock();
+}
+
+const std::vector<std::weak_ptr<Mesh>> &Node::getMeshes() const
 {
     if (!hasMesh())
     {
         throw PvkExceptionAsset("Trying to get mesh indices from node which has no meshes.");
     }
 
-    return m_meshIndices;
+    return m_meshes;
 }
 
 const glm::mat4 &Node::getMatrix() const
@@ -54,6 +59,22 @@ const glm::mat4 &Node::getMatrix() const
 void Node::setParent(std::weak_ptr<Node> parent)
 {
     m_parent = std::move(parent);
+}
+
+void Node::addChild(std::weak_ptr<Node> child) 
+{
+    m_children.push_back(std::move(child));
+}
+
+void Node::draw(const pvk::command_buffer::CommandBuffer &commandBuffer) const 
+{
+    for (const auto &mesh : m_meshes) {
+        mesh.lock()->draw(commandBuffer);
+    }
+
+    for (const auto &child : m_children) {
+        child.lock()->draw(commandBuffer);
+    }
 }
 
 } // namespace pvk::geometry

@@ -25,7 +25,6 @@ public:
     void init()
     {
         m_object = pvk::io::loadObject("/Users/christian/walk/walk.object");
-        m_mesh = std::make_unique<pvk::geometry::Mesh>("/Users/christian/Beta_Surface.pvm");
 
         m_pipeline = std::make_unique<pvk::vulkan::Pipeline>(
             pvk::graphics::get()->getRenderPipeline<pvk::engine::RenderPipeline>().getRenderPass(),
@@ -39,17 +38,10 @@ public:
         VkDeviceSize offset = 0;
         cb.bindPipeline(vk::PipelineBindPoint::eGraphics, m_pipeline->getPipeline());
 
-        cb.bindVertexBuffers(0, m_object->getMesh(0).getVertexBuffer().getBuffer(), offset);
-        cb.bindIndexBuffer(m_object->getMesh(0).getIndexBuffer().getBuffer(), offset, vk::IndexType::eUint32);
-        cb.drawIndexed(m_object->getMesh(0).getNumberOfIndices(), 1, 0, 0, 0);
-
-        cb.bindVertexBuffers(0, m_object->getMesh(1).getVertexBuffer().getBuffer(), offset);
-        cb.bindIndexBuffer(m_object->getMesh(1).getIndexBuffer().getBuffer(), offset, vk::IndexType::eUint32);
-        cb.drawIndexed(m_object->getMesh(1).getNumberOfIndices(), 1, 0, 0, 0);
+        m_object->draw(commandBuffer);
     }
 
 private:
-    std::unique_ptr<pvk::geometry::Mesh> m_mesh;
     std::unique_ptr<pvk::geometry::Object> m_object;
 };
 

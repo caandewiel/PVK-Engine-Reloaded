@@ -7,10 +7,11 @@
 #include <vector>
 
 #include "Vertex.hpp"
+#include "Drawable.hpp"
 
 namespace pvk::geometry
 {
-class Mesh
+class Mesh : public Drawable
 {
 public:
     explicit Mesh(const std::filesystem::path &path);
@@ -32,6 +33,8 @@ public:
     {
         return m_numIndices;
     }
+
+    void draw(const pvk::command_buffer::CommandBuffer &commandBuffer) const override;
 
 private:
     uint32_t m_numVertices;

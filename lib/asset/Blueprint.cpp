@@ -13,6 +13,7 @@ nlohmann::json NodeInfo::toJson() const
         {"identifier", identifier},
         {"name", name},
         {"parent", parent},
+        {"children", children},
         {"meshIndices", meshIndices},
     };
 }
@@ -23,6 +24,7 @@ NodeInfo NodeInfo::parseJson(const nlohmann::json &json)
     node.identifier = json["identifier"];
     node.name = json["name"];
     node.parent = json["parent"];
+    node.children = json["children"].get<std::vector<uint32_t>>();
     node.meshIndices = json["meshIndices"].get<std::vector<uint32_t>>();
 
     return node;

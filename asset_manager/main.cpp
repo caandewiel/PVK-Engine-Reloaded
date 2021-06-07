@@ -205,7 +205,6 @@ void loadNode(const aiScene *scene,
               int32_t parentIndex = -1)
 {
     const auto currentIndex = blueprint->matrices.size();
-    const auto children = std::span(node->mChildren, node->mNumChildren);
 
     pvk::asset::NodeInfo currentNode;
     currentNode.identifier = currentIndex;
@@ -222,15 +221,14 @@ void loadNode(const aiScene *scene,
         }
     }
 
-    for (size_t i = 0; i < node->mNumMeshes; i++)
-    {
-        currentNode.meshIndices.emplace_back(node->mMeshes[i]);
+    for (const auto &mesh : std::span(node->mMeshes, node->mNumMeshes)) {
+        currentNode.meshIndices.emplace_back(mesh);
     }
 
     blueprint->nodes.emplace_back(std::move(currentNode));
     blueprint->matrices.emplace_back(modelMatrix);
 
-    for (const auto &child : children)
+    for (const auto &child : std::span(node->mChildren, node->mNumChildren))
     {
         loadNode(scene, child, blueprint, currentIndex);
     }

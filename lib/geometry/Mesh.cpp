@@ -41,4 +41,14 @@ const vulkan::Buffer &Mesh::getIndexBuffer() const
 {
     return *m_indexBuffer;
 }
+
+void Mesh::draw(const pvk::command_buffer::CommandBuffer &commandBuffer) const
+{
+    const auto offset = 0;
+
+    const auto &cb = commandBuffer.getCommandBuffer(0);
+    cb.bindVertexBuffers(0, m_vertexBuffer->getBuffer(), offset);
+    cb.bindIndexBuffer(m_indexBuffer->getBuffer(), offset, vk::IndexType::eUint32);
+    cb.drawIndexed(getNumberOfIndices(), 1, 0, 0, 0);
+}
 } // namespace pvk::geometry

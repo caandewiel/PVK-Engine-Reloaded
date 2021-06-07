@@ -11,7 +11,7 @@
 
 namespace pvk::geometry
 {
-Object::Object(absl::flat_hash_map<uint32_t, std::unique_ptr<Mesh>> &&meshLookup,
+Object::Object(absl::flat_hash_map<uint32_t, std::shared_ptr<Mesh>> &&meshLookup,
                absl::flat_hash_map<uint32_t, std::shared_ptr<Node>> &&nodeLookup)
     : m_meshLookup(std::move(meshLookup)), m_nodeLookup(std::move(nodeLookup))
 {
@@ -44,5 +44,10 @@ const Node &Object::getNode(uint32_t nodeIndex) const
 const Node &Object::getRootNode() const
 {
     return *m_nodeLookup.at(0);
+}
+
+void Object::draw(const pvk::command_buffer::CommandBuffer &commandBuffer) const 
+{
+    getRootNode().draw(commandBuffer);
 }
 } // namespace pvk::geometry

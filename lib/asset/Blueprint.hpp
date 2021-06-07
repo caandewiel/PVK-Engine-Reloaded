@@ -25,6 +25,7 @@ struct NodeInfo
     uint32_t identifier;
     std::string name;
     int32_t parent; // -1 when no parent
+    std::vector<uint32_t> children;
     std::vector<uint32_t> meshIndices;
 };
 
