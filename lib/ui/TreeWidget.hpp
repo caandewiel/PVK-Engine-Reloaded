@@ -4,13 +4,13 @@
 #include "Widget.hpp"
 
 #include "../geometry/Object.hpp"
-#include <memory>
 
 namespace pvk::ui
 {
 struct Node {
     std::string content;
     std::vector<std::unique_ptr<Node>> children;
+    const char * icon;
 };
 
 class TreeWidget : public Widget

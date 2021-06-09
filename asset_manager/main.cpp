@@ -24,9 +24,6 @@
 
 #include <json.hpp>
 
-#include <glm/glm.hpp>
-#include <glm/gtc/type_ptr.hpp>
-
 #include "../lib/asset/AssetHelper.hpp"
 #include "../lib/asset/Blueprint.hpp"
 
@@ -266,13 +263,14 @@ void loadNodes(const aiScene *scene, const std::filesystem::path &destinationPat
 
 int main(int argc, char *argv[])
 {
-    // if (argc < 2) {
-    //     std::cout << "No path to asset was provided.\n";
+    if (argc < 2) {
+        std::cout << "No path to asset was provided.\n";
 
-    //     return -1;
-    // }
+        return -1;
+    }
 
-    std::filesystem::path filePath{"/Users/christian/walk.glb"};
+    std::filesystem::path filePath{argv[1]};
+// std::filesystem::path filePath{"/Users/christian/walk.glb"};
 
     std::cout << fmt::format("Loading file {}", filePath.string()) << "\n";
 

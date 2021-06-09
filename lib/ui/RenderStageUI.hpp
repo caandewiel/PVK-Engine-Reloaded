@@ -1,19 +1,24 @@
 #ifndef RENDERSTAGEUI_HPP
 #define RENDERSTAGEUI_HPP
 
-#include "../../external/imgui/imgui.h"
-#include "../engine/RenderStageBase.hpp"
-#include "../vulkan/CommandBuffer.hpp"
-#include "LogWidget.hpp"
-#include "OverlayWidget.hpp"
-#include <absl/container/flat_hash_map.h>
 #include <cstdarg>
 #include <cstdio>
 #include <memory>
 #include <sstream>
 #include <stdexcept>
 #include <string>
+
+#include <absl/container/flat_hash_map.h>
+
+#include <imgui.h>
+
 #include <vulkan/vulkan.hpp>
+
+#include "LogWidget.hpp"
+#include "OverlayWidget.hpp"
+
+#include "../engine/RenderStageBase.hpp"
+#include "../vulkan/CommandBuffer.hpp"
 
 namespace pvk::ui
 {
@@ -34,6 +39,7 @@ public:
 
 private:
     ImGuiContext *m_context;
+    std::unique_ptr<vulkan::DescriptorPool> m_descriptorPool;
     absl::flat_hash_map<std::string, std::unique_ptr<Widget>> m_widgets;
     std::unique_ptr<LogWidget> m_logWidget;
     std::unique_ptr<OverlayWidget> m_overlayWidget;

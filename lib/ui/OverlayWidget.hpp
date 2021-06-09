@@ -1,8 +1,8 @@
 #ifndef OVERLAYWIDGET_HPP
 #define OVERLAYWIDGET_HPP
 
-#include "../../external/imgui/imgui.h"
 #include "Widget.hpp"
+
 #include <string>
 
 namespace pvk::ui

@@ -6,7 +6,7 @@
 
 #include <vulkan/vulkan.hpp>
 
-#include "../../external/proxy/vk_mem_alloc.h"
+#include <vk_mem_alloc.h>
 
 #include "Buffer.hpp"
 #include "CommandBuffer.hpp"

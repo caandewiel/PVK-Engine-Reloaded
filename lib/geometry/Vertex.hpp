@@ -1,11 +1,11 @@
 #ifndef VERTEX_HPP
 #define VERTEX_HPP
 
-#include "glm/fwd.hpp"
 #include <array>
 #include <cstddef>
-#include <glm/glm.hpp>
 #include <vulkan/vulkan.hpp>
+
+#include <glm/glm.hpp>
 
 namespace pvk::geometry
 {

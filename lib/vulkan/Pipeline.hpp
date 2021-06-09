@@ -1,21 +1,22 @@
 #ifndef PIPELINE_HPP
 #define PIPELINE_HPP
 
-#include "Device.hpp"
-#include "RenderPass.hpp"
-#include "VulkanObject.hpp"
 #include <memory>
 #include <vector>
 #include <vulkan/vulkan.hpp>
 
+#include "Device.hpp"
+#include "RenderPass.hpp"
+
+#include "../engine/pipeline/ShaderReflection.hpp"
+
 namespace pvk::vulkan
 {
-class Pipeline : public vulkan::VulkanObject
+class Pipeline
 {
 public:
-    Pipeline(const vulkan::RenderPass &renderPass,
-             const std::string &vertexShader,
-             const std::string &fragmentShader);
+    Pipeline(const vulkan::RenderPass &renderPass, const std::string &vertexShader, const std::string &fragmentShader);
+    Pipeline(const engine::pipeline::PipelineDefinition &pipelineDefinition);
     ~Pipeline();
 
     [[nodiscard]] const vk::Pipeline &getPipeline() const;

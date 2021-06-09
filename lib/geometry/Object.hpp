@@ -1,9 +1,10 @@
 #ifndef OBJECT_HPP
 #define OBJECT_HPP
 
-#include <absl/container/flat_hash_map.h>
 #include <filesystem>
 #include <memory>
+
+#include <absl/container/flat_hash_map.h>
 
 #include "Drawable.hpp"
 #include "Mesh.hpp"

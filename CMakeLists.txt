@@ -19,12 +19,7 @@ set(ASSIMP_INSTALL OFF)
 find_package(Vulkan REQUIRED)
 
 # Load subfolders
-add_subdirectory(external/glfw)
-add_subdirectory(external/glm)
-add_subdirectory(external/abseil-cpp)
-add_subdirectory(external/fmt)
-add_subdirectory(external/assimp)
-add_subdirectory(external/SPIRV-Cross)
+add_subdirectory(external)
 add_subdirectory(lib/io)
 add_subdirectory(lib/vulkan)
 add_subdirectory(lib/engine)
@@ -35,9 +30,6 @@ add_subdirectory(asset_manager)
 
 # Include external library headers
 include_directories(SYSTEM external/VulkanMemoryAllocator-Hpp/)
-include_directories(SYSTEM external/imgui/)
-include_directories(SYSTEM external/json/)
-include_directories(SYSTEM external/lz4/programs)
 include_directories(SYSTEM ${Vulkan_INCLUDE_DIRS})
 
 add_executable(${PROJECT_NAME} main.cpp)

@@ -1,13 +1,14 @@
 #ifndef MESH_HPP
 #define MESH_HPP
 
-#include "../vulkan/Buffer.hpp"
 #include <filesystem>
 #include <memory>
 #include <vector>
 
 #include "Vertex.hpp"
 #include "Drawable.hpp"
+
+#include "../vulkan/Buffer.hpp"
 
 namespace pvk::geometry
 {

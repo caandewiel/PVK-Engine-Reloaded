@@ -1,5 +1,7 @@
 #include "OverlayWidget.hpp"
 
+#include <imgui.h>
+
 namespace pvk::ui
 {
 

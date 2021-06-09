@@ -173,17 +173,10 @@ Pipeline::Pipeline(const vulkan::RenderPass &renderPass,
     }
 }
 
-Pipeline::~Pipeline()
+Pipeline::~Pipeline() 
 {
-    auto logicalDevice = graphics::get()->getDevice().getLogicalDevice();
-
-    for (const auto &shaderModule : this->m_shaderModules)
-    {
-        logicalDevice.destroyShaderModule(shaderModule);
-    }
-
-    logicalDevice.destroyPipeline(this->m_pipeline);
-    logicalDevice.destroyPipelineLayout(this->m_pipelineLayout);
+    graphics::get()->getDevice().getLogicalDevice().destroyPipelineLayout(m_pipelineLayout);
+    graphics::get()->getDevice().getLogicalDevice().destroyPipeline(m_pipeline);
 }
 
 const vk::Pipeline &Pipeline::getPipeline() const

@@ -1,5 +1,5 @@
 #include "LogWidget.hpp"
-#include "imgui.h"
+
 #include <cstdarg>
 
 namespace pvk::ui

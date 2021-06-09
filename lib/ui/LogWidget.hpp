@@ -1,9 +1,11 @@
 #ifndef LOGWIDGET_HPP
 #define LOGWIDGET_HPP
 
-#include "../../external/imgui/imgui.h"
 #include "Widget.hpp"
+
 #include <string>
+
+#include <imgui.h>
 
 namespace pvk::ui
 {

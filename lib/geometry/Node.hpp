@@ -1,8 +1,9 @@
 #ifndef NODE_HPP
 #define NODE_HPP
 
-#include <glm/glm.hpp>
 #include <memory>
+
+#include <glm/glm.hpp>
 
 #include "Drawable.hpp"
 #include "Mesh.hpp"

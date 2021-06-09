@@ -1,8 +1,12 @@
 #include "Buffer.hpp"
-#include "../engine/Graphics.hpp"
-#include "../../external/proxy/vk_mem_alloc.h"
+
 #include <type_traits>
+
 #include <vulkan/vulkan.hpp>
+
+#include <vk_mem_alloc.h>
+
+#include "../engine/Graphics.hpp"
 
 namespace pvk::vulkan
 {

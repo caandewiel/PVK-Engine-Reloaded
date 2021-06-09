@@ -1,16 +1,23 @@
 #include "RenderStageUI.hpp"
-#include "../../external/imgui/backends/imgui_impl_glfw.h"
-#include "../../external/imgui/backends/imgui_impl_vulkan.h"
-#include "../../external/imgui/imgui.h"
-#include "../engine/Graphics.hpp"
-#include "../vulkan/Helper.hpp"
+
+#include <array>
+#include <filesystem>
+#include <memory>
+#include <utility>
+
+#include <IconsFontAwesome4.h>
+
+#include <vulkan/vulkan.hpp>
+
+#include <imgui.h>
+#include <backends/imgui_impl_glfw.h>
+#include <backends/imgui_impl_vulkan.h>
+
 #include "LogWidget.hpp"
 #include "OverlayWidget.hpp"
 
-#include <array>
-#include <memory>
-#include <utility>
-#include <vulkan/vulkan.hpp>
+#include "../engine/Graphics.hpp"
+#include "../vulkan/Helper.hpp"
 
 namespace pvk::ui
 {
@@ -47,6 +54,20 @@ RenderStageUI::RenderStageUI(const vulkan::CommandPool &commandPool, const vulka
 
     ImGui_ImplVulkan_Init(&initInfo, renderPass.getRenderPass());
 
+    ImGui::GetIO().Fonts->AddFontDefault();
+
+    static const std::array<ImWchar, 3> iconRanges = {ICON_MIN_FA, ICON_MAX_FA, 0};
+    ImFontConfig iconConfig;
+    iconConfig.MergeMode = true;
+    iconConfig.PixelSnapH = true;
+
+    // @TODO: Make this pretty and not hacky
+    ImGui::GetIO().Fonts->AddFontFromFileTTF(
+        std::filesystem::absolute(std::filesystem::path("../external/FontAwesome/fontawesome-webfont.ttf")).c_str(),
+        10.0F,
+        &iconConfig,
+        iconRanges.data());
+
     vulkan::executeOneTimeCommandBuffer(commandPool, [](const command_buffer::CommandBuffer &commandBuffer) {
         ImGui_ImplVulkan_CreateFontsTexture(commandBuffer.getCommandBuffer(0));
     });
@@ -57,7 +78,7 @@ RenderStageUI::RenderStageUI(const vulkan::CommandPool &commandPool, const vulka
     m_overlayWidget = std::make_unique<OverlayWidget>("General information");
 }
 
-RenderStageUI::~RenderStageUI() 
+RenderStageUI::~RenderStageUI()
 {
     ImGui_ImplVulkan_Shutdown();
     m_descriptorPool.reset();
@@ -74,7 +95,8 @@ void RenderStageUI::render(const command_buffer::CommandBuffer &commandBuffer) c
     m_logWidget->draw();
     m_overlayWidget->draw();
 
-    for (const auto &[_, widget] : m_widgets) {
+    for (const auto &[_, widget] : m_widgets)
+    {
         widget->draw();
     }
 
@@ -88,7 +110,7 @@ void RenderStageUI::log(const std::string &text)
     m_logWidget->addLog(text.c_str());
 }
 
-void RenderStageUI::registerWidget(const std::string &identifier, std::unique_ptr<Widget> &&widget) 
+void RenderStageUI::registerWidget(const std::string &identifier, std::unique_ptr<Widget> &&widget)
 {
     m_widgets.insert(std::make_pair(identifier, std::move(widget)));
 }
@@ -98,7 +120,7 @@ LogWidget &RenderStageUI::getLogger() const
     return *m_logWidget;
 }
 
-OverlayWidget& RenderStageUI::getOverlayWidget() const
+OverlayWidget &RenderStageUI::getOverlayWidget() const
 {
     return *m_overlayWidget;
 }

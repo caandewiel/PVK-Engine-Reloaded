@@ -1,7 +1,6 @@
 #ifndef ENGINE_HPP
 #define ENGINE_HPP
 
-#include "../../external/proxy/vk_mem_alloc.h"
 #include "../vulkan/Device.hpp"
 #include "Application.hpp"
 #include "Graphics.hpp"

@@ -9,7 +9,7 @@
 
 #include <vulkan/vulkan.hpp>
 
-#include "../../external/proxy/vk_mem_alloc.h"
+#include <vk_mem_alloc.h>
 
 #include "../engine/Graphics.hpp"
 #include "../io/AssetLoader.hpp"

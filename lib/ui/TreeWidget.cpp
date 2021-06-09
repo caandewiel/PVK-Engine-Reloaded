@@ -1,6 +1,10 @@
 #include "TreeWidget.hpp"
 
+#include "../../external/FontAwesome/IconsFontAwesome4.h"
+
 #include <memory>
+
+#include <fmt/format.h>
 
 #include <imgui.h>
 
@@ -25,7 +29,7 @@ void TreeWidget::setContent(const geometry::Object &object)
 
 void TreeWidget::drawNode(const Node &node)
 {
-    if (ImGui::TreeNode(node.content.c_str()))
+    if (ImGui::TreeNode(fmt::format("{} {}", node.icon, node.content.c_str()).c_str()))
     {
         for (const auto &child : node.children)
         {
@@ -40,6 +44,7 @@ std::unique_ptr<Node> TreeWidget::addNode(const geometry::Node &node)
 {
     auto currentNode = std::make_unique<Node>();
     currentNode->content = node.getName();
+    currentNode->icon = node.hasMesh() ? ICON_FA_GLOBE : ICON_FA_CODE_FORK;
 
     for (const auto &child : node.getChildren())
     {
