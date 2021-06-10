@@ -9,13 +9,10 @@ on:
 # Adapted from https://github.com/inexorgame/vulkan-renderer/blob/master/.github/workflows/build.yml
 
 env:
+  BUILD_TYPE: Release
   pvk_reloaded_build_type: "Release"
   pvk_reloaded_vulkan_version: "1.2.131.1"
   pvk_reloaded_vulkan_sdk: "$GITHUB_WORKSPACE/../vulkan_sdk/"
-
-env:
-  # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
-  BUILD_TYPE: Release
 
 jobs:
   build:
