@@ -26,11 +26,6 @@ jobs:
       DEBIAN_FRONTEND: "noninteractive"
 
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v2
-    - name: Checkout submodules
-      uses: textbook/git-checkout-submodule-action@2.1.1
-
     - name: Install necessary packages
       shell: bash
       run: |
@@ -43,6 +38,10 @@ jobs:
           curl \
           git \
           pkg-config
+    - name: Checkout repository
+      uses: actions/checkout@v2
+    - name: Checkout submodules
+      uses: textbook/git-checkout-submodule-action@2.1.1
 
     - name: Install Vulkan SDK
       shell: bash
