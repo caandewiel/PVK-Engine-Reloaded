@@ -1,6 +1,7 @@
 #include "io.hpp"
 
 #include <memory>
+#include <string.h>
 
 namespace pvk::io
 {
