@@ -21,7 +21,7 @@
 
 #include "../ui/RenderStageUI.hpp"
 
-#include "RenderStageBase.hpp"
+#include "RenderStage.hpp"
 
 namespace pvk::engine
 {
@@ -33,11 +33,11 @@ public:
 
     virtual void render(const pvk::command_buffer::CommandBuffer &commandBuffer) = 0;
     void render();
-    void registerRenderStage(const std::string &identifier, std::unique_ptr<RenderStageBase> &&renderStage);
+    void registerRenderStage(const std::string &identifier, std::unique_ptr<RenderStage> &&renderStage);
 
     template <class T> void initializeRenderStage(const std::string &identifier)
     {
-        std::unique_ptr<RenderStageBase> renderStage = std::make_unique<T>(*m_commandPool, *m_renderPass);
+        std::unique_ptr<RenderStage> renderStage = std::make_unique<T>(*m_commandPool, *m_renderPass);
         m_renderStages.insert(std::make_pair(identifier, std::move(renderStage)));
     }
 
@@ -66,7 +66,7 @@ private:
     std::unique_ptr<vulkan::Semaphore> m_renderSemaphore{};
     std::unique_ptr<ui::RenderStageUI> m_renderStageUI{};
 
-    absl::flat_hash_map<std::string, std::unique_ptr<RenderStageBase>> m_renderStages{};
+    absl::flat_hash_map<std::string, std::unique_ptr<RenderStage>> m_renderStages{};
 
     [[nodiscard]] uint32_t getNextImageFromSwapChain();
     void submitCommandBufferToGraphicsQueue();

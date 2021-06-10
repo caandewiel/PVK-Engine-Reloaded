@@ -65,7 +65,7 @@ void RenderPipeline::render()
     this->presentGraphicsQueue(imageIndex);
 }
 
-void RenderPipeline::registerRenderStage(const std::string &identifier, std::unique_ptr<RenderStageBase> &&renderStage)
+void RenderPipeline::registerRenderStage(const std::string &identifier, std::unique_ptr<RenderStage> &&renderStage)
 {
     m_renderStages.insert(std::make_pair(identifier, std::move(renderStage)));
 }

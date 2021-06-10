@@ -17,20 +17,20 @@
 #include "LogWidget.hpp"
 #include "OverlayWidget.hpp"
 
-#include "../engine/RenderStageBase.hpp"
+#include "../engine/RenderStage.hpp"
 #include "../vulkan/CommandBuffer.hpp"
 
 namespace pvk::ui
 {
 constexpr uint32_t defaultDescriptorCount = 1000;
 
-class RenderStageUI : public engine::RenderStageBase
+class RenderStageUI : public engine::RenderStage
 {
 public:
     RenderStageUI(const vulkan::CommandPool &commandPool, const vulkan::RenderPass &renderPass);
     ~RenderStageUI() override;
 
-    void render(const command_buffer::CommandBuffer &commandBuffer) const override;
+    void render(const command_buffer::CommandBuffer &commandBuffer) const;
     void log(const std::string &text);
     void registerWidget(const std::string &identifier, std::unique_ptr<Widget> &&widget);
 

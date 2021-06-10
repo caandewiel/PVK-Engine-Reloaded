@@ -8,15 +8,13 @@
 #include "Device.hpp"
 #include "RenderPass.hpp"
 
-#include "../engine/pipeline/ShaderReflection.hpp"
-
 namespace pvk::vulkan
 {
 class Pipeline
 {
 public:
     Pipeline(const vulkan::RenderPass &renderPass, const std::string &vertexShader, const std::string &fragmentShader);
-    Pipeline(const engine::pipeline::PipelineDefinition &pipelineDefinition);
+    Pipeline(const vk::Pipeline &pipeline, const vk::PipelineLayout &pipelineLayout, std::vector<vk::ShaderModule> &&shaderModules);
     ~Pipeline();
 
     [[nodiscard]] const vk::Pipeline &getPipeline() const;

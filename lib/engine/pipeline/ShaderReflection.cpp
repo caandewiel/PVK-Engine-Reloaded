@@ -169,5 +169,4 @@ PipelineDefinition createPipelineDefinitionFromSPIRVShader(const std::string &pa
 
     return pipelineDefinition;
 }
-
 } // namespace pvk::engine::pipeline

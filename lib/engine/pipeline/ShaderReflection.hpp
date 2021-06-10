@@ -1,6 +1,7 @@
 #ifndef SHADERREFLECTION_HPP
 #define SHADERREFLECTION_HPP
 
+#include <filesystem>
 #include <string>
 
 #include <absl/container/flat_hash_map.h>

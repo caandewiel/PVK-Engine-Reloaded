@@ -1,4 +1,4 @@
-#include "RenderStageBase.hpp"
+#include "RenderStage.hpp"
 
 #include <memory>
 
@@ -33,17 +33,29 @@ std::unique_ptr<pvk::vulkan::DescriptorPool> createDescriptorPool()
 
 namespace pvk::engine
 {
-RenderStageBase::RenderStageBase(const pvk::vulkan::RenderPass &renderPass,
-                                 const std::filesystem::path &pathVertexShader,
-                                 const std::filesystem::path &pathFragmentShader)
+RenderStage::RenderStage(std::unique_ptr<pvk::vulkan::Pipeline> &&pipeline,
+                         std::unique_ptr<pvk::vulkan::DescriptorPool> &&descriptorPool)
+    : m_pipeline(std::move(pipeline)), m_descriptorPool(std::move(descriptorPool))
+{
+}
+
+RenderStage::RenderStage(const pvk::vulkan::RenderPass &renderPass,
+                         const std::filesystem::path &pathVertexShader,
+                         const std::filesystem::path &pathFragmentShader)
 {
     m_descriptorPool = createDescriptorPool();
     // pipeline::createPipelineDefinitionFromSPIRVShader(pathVertexShader, pathFragmentShader);
 }
 
-RenderStageBase::~RenderStageBase()
+RenderStage::~RenderStage()
 {
     m_descriptorPool.reset();
     m_pipeline.reset();
+}
+
+void RenderStage::renderObject(const command_buffer::CommandBuffer &commandBuffer, const geometry::Object &object) const {
+    const auto &cb = commandBuffer.getCommandBuffer(0);
+    cb.bindPipeline(vk::PipelineBindPoint::eGraphics, m_pipeline->getPipeline());
+    object.draw(commandBuffer);
 }
 } // namespace pvk::engine

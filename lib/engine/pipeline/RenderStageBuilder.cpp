@@ -1,24 +1,23 @@
-#include "Pipeline.hpp"
+#include "RenderStageBuilder.hpp"
 
-#include <array>
 #include <memory>
-#include <type_traits>
-
 #include <vulkan/vulkan.hpp>
 
-#include "RenderPass.hpp"
-#include "SwapChain.hpp"
+#include "ShaderReflection.hpp"
 
-#include "../engine/Graphics.hpp"
-#include "../io/io.hpp"
+#include "../Graphics.hpp"
 
-namespace pvk::vulkan
-{
+#include "../../io/io.hpp"
+
+#include "../../vulkan/DescriptorPool.hpp"
+#include "../../vulkan/Device.hpp"
+#include "../../vulkan/SwapChain.hpp"
+
 namespace
 {
-vk::ShaderModule createShaderModule(const vulkan::Device &device, const std::string &shader)
+vk::ShaderModule createShaderModule(const pvk::vulkan::Device &device, const std::string &shader)
 {
-    const auto shaderContent = io::readFile(shader);
+    const auto shaderContent = pvk::io::readFile(shader);
 
     vk::ShaderModuleCreateInfo shaderModuleCreateInfo;
     shaderModuleCreateInfo.setCode(shaderContent);
@@ -26,14 +25,7 @@ vk::ShaderModule createShaderModule(const vulkan::Device &device, const std::str
     return device.getLogicalDevice().createShaderModule(shaderModuleCreateInfo);
 }
 
-vk::PipelineLayout createPipelineLayout(const vulkan::Device &device)
-{
-    vk::PipelineLayoutCreateInfo pipelineLayoutCreateInfo{};
-
-    return device.getLogicalDevice().createPipelineLayout(pipelineLayoutCreateInfo);
-}
-
-vk::PipelineViewportStateCreateInfo initializeViewportStateCreateInfo(const vulkan::SwapChain &swapChain,
+vk::PipelineViewportStateCreateInfo initializeViewportStateCreateInfo(const pvk::vulkan::SwapChain &swapChain,
                                                                       const std::array<vk::Viewport, 1> &viewports,
                                                                       const std::array<vk::Rect2D, 1> &scissors)
 {
@@ -106,16 +98,106 @@ vk::PipelineVertexInputStateCreateInfo initializeVertexInputStateCreateInfo()
 }
 } // namespace
 
-Pipeline::Pipeline(const vulkan::RenderPass &renderPass,
-                   const std::string &vertexShader,
-                   const std::string &fragmentShader)
+namespace
+{
+vk::PipelineLayout initializePipelineLayout(const pvk::engine::pipeline::PipelineDefinition &pipelineDefinition)
+{
+    const auto &device = pvk::graphics::get()->getDevice().getLogicalDevice();
+
+    std::vector<vk::DescriptorSetLayout> descriptorSetLayouts{};
+
+    for (const auto &descriptorSet : pipelineDefinition.descriptorSets)
+    {
+        vk::DescriptorSetLayoutCreateInfo descriptorSetLayoutCreateInfo;
+        descriptorSetLayoutCreateInfo.setBindings(descriptorSet.second);
+
+        descriptorSetLayouts.emplace_back(device.createDescriptorSetLayout(descriptorSetLayoutCreateInfo));
+    }
+
+    vk::PipelineLayoutCreateInfo pipelineLayoutCreateInfo{};
+    pipelineLayoutCreateInfo.setSetLayouts(descriptorSetLayouts);
+
+    std::vector<vk::PushConstantRange> pushConstantRanges;
+
+    for (const auto &[identifier, descriptor] : pipelineDefinition.pushConstantDefinitions)
+    {
+        vk::PushConstantRange pushConstantRange;
+        pushConstantRange.setStageFlags(descriptor.shaderStage);
+        pushConstantRange.setSize(descriptor.bufferSize);
+        pushConstantRange.setOffset(0);
+
+        pushConstantRanges.emplace_back(pushConstantRange);
+    }
+
+    pipelineLayoutCreateInfo.setPushConstantRanges(pushConstantRanges);
+
+    return device.createPipelineLayout(pipelineLayoutCreateInfo);
+}
+
+std::unique_ptr<pvk::vulkan::DescriptorPool> initializeDescriptorPool()
+{
+    // This workaround is adapted from:
+    // https://github.com/EQMG/Acid/blob/cb1e62a80cdba662a0b2c1ba008b2bf4a397877a/Sources/Graphics/Pipelines/Shader.cpp
+    constexpr uint32_t descriptorPoolMaxNumberOfSets = 8192;
+    constexpr uint32_t descriptorCountHigh = 4096;
+    constexpr uint32_t descriptorCountLow = 2048;
+
+    std::vector<vk::DescriptorPoolSize> descriptorPoolSizes = {
+        {vk::DescriptorType::eCombinedImageSampler, descriptorCountHigh},
+        {vk::DescriptorType::eUniformBuffer, descriptorCountLow},
+        {vk::DescriptorType::eStorageImage, descriptorCountLow},
+        {vk::DescriptorType::eUniformTexelBuffer, descriptorCountLow},
+        {vk::DescriptorType::eStorageTexelBuffer, descriptorCountLow},
+        {vk::DescriptorType::eStorageBuffer, descriptorCountLow},
+    };
+
+    return std::make_unique<pvk::vulkan::DescriptorPool>(
+        descriptorPoolSizes, vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet, descriptorPoolMaxNumberOfSets);
+}
+} // namespace
+
+namespace pvk::engine::pipeline
+{
+RenderStageBuilder &RenderStageBuilder::setVertexShader(const std::filesystem::path &vertexShader)
+{
+    this->m_pathToVertexShader = vertexShader;
+
+    return *this;
+}
+
+RenderStageBuilder &RenderStageBuilder::setFragmentShader(const std::filesystem::path &fragmentShader)
+{
+    this->m_pathToFragmentShader = fragmentShader;
+
+    return *this;
+}
+
+RenderStageBuilder &RenderStageBuilder::setRenderPass(const vulkan::RenderPass &renderPass)
+{
+    this->m_renderPass = &renderPass;
+
+    return *this;
+}
+
+RenderStageBuilder &RenderStageBuilder::setViewport(const vk::Extent2D &viewport)
+{
+    this->m_viewport = viewport;
+
+    return *this;
+}
+
+std::unique_ptr<pvk::engine::RenderStage> RenderStageBuilder::create()
 {
     const auto &device = graphics::get()->getDevice();
     const auto &swapChain = graphics::get()->getSwapChain();
 
-    m_pipelineLayout = createPipelineLayout(device);
-    auto vertexShaderModule = createShaderModule(device, vertexShader);
-    auto fragmentShaderModule = createShaderModule(device, fragmentShader);
+    const auto pipelineDefinition =
+        createPipelineDefinitionFromSPIRVShader(m_pathToVertexShader, m_pathToFragmentShader);
+
+    auto pipelineLayout = initializePipelineLayout(pipelineDefinition);
+
+    auto vertexShaderModule = createShaderModule(device, m_pathToVertexShader);
+    auto fragmentShaderModule = createShaderModule(device, m_pathToFragmentShader);
 
     std::array<vk::Viewport, 1> viewports = {vk::Viewport(0.0F,
                                                           0.0F,
@@ -151,8 +233,8 @@ Pipeline::Pipeline(const vulkan::RenderPass &renderPass,
 
     vk::GraphicsPipelineCreateInfo pipelineCreateInfo;
     pipelineCreateInfo.setStages(shaderStages);
-    pipelineCreateInfo.setLayout(m_pipelineLayout);
-    pipelineCreateInfo.setRenderPass(renderPass.getRenderPass());
+    pipelineCreateInfo.setLayout(pipelineLayout);
+    pipelineCreateInfo.setRenderPass(m_renderPass->getRenderPass());
     pipelineCreateInfo.setPRasterizationState(&rasterizationStateCreateInfo);
     pipelineCreateInfo.setPViewportState(&viewportStateCreateInfo);
     pipelineCreateInfo.setPMultisampleState(&multisampleStateCreateInfo);
@@ -161,40 +243,19 @@ Pipeline::Pipeline(const vulkan::RenderPass &renderPass,
     pipelineCreateInfo.setPInputAssemblyState(&inputAssemblyStateCreateInfo);
     pipelineCreateInfo.setSubpass(0);
 
-    auto pipeline = device.getLogicalDevice().createGraphicsPipeline(nullptr, pipelineCreateInfo);
+    auto vulkanPipeline = device.getLogicalDevice().createGraphicsPipeline(nullptr, pipelineCreateInfo);
 
-    if (pipeline.result == vk::Result::eSuccess)
+    if (vulkanPipeline.result == vk::Result::eSuccess)
     {
-        this->m_pipeline = pipeline.value;
+        std::vector<vk::ShaderModule> shaderModules{};
+        shaderModules.emplace_back(vertexShaderModule);
+        shaderModules.emplace_back(fragmentShaderModule);
 
-        std::vector<vk::ShaderModule> shaderModules;
-        this->m_shaderModules.emplace_back(vertexShaderModule);
-        this->m_shaderModules.emplace_back(fragmentShaderModule);
-    }
-    else
-    {
-    }
-}
-
-Pipeline::Pipeline(const vk::Pipeline &pipeline,
-                   const vk::PipelineLayout &pipelineLayout,
-                   std::vector<vk::ShaderModule> &&shaderModules)
-    : m_pipeline(pipeline), m_pipelineLayout(pipelineLayout), m_shaderModules(std::move(shaderModules))
-{
-}
-
-Pipeline::~Pipeline()
-{
-    for (auto &shaderModule : m_shaderModules) {
-        graphics::get()->getDevice().getLogicalDevice().destroyShaderModule(shaderModule);
+        return std::make_unique<pvk::engine::RenderStage>(
+            std::make_unique<pvk::vulkan::Pipeline>(vulkanPipeline.value, pipelineLayout, std::move(shaderModules)),
+            initializeDescriptorPool());
     }
 
-    graphics::get()->getDevice().getLogicalDevice().destroyPipelineLayout(m_pipelineLayout);
-    graphics::get()->getDevice().getLogicalDevice().destroyPipeline(m_pipeline);
+    throw std::runtime_error("BOEM");
 }
-
-const vk::Pipeline &Pipeline::getPipeline() const
-{
-    return m_pipeline;
-}
-} // namespace pvk::vulkan
+} // namespace pvk::engine::pipeline

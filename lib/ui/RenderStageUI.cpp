@@ -63,7 +63,7 @@ RenderStageUI::RenderStageUI(const vulkan::CommandPool &commandPool, const vulka
 
     // @TODO: Make this pretty and not hacky
     ImGui::GetIO().Fonts->AddFontFromFileTTF(
-        std::filesystem::absolute(std::filesystem::path("../external/FontAwesome/fontawesome-webfont.ttf")).c_str(),
+        std::filesystem::absolute(std::filesystem::path("/Users/christian/CLionProjects/pvk-reloaded/external/FontAwesome/fontawesome-webfont.ttf")).c_str(),
         10.0F,
         &iconConfig,
         iconRanges.data());
