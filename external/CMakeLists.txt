@@ -33,7 +33,6 @@ target_include_directories(glm INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/glm/")
 
 # JSON
 target_include_directories(json INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/json/")
-set_target_properties(json PROPERTIES LINKER_LANGUAGE CXX)
 
 # LZ4
 target_include_directories(lz4 PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/lz4/lib/")
