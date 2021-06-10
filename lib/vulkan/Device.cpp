@@ -1,10 +1,9 @@
 #include "Device.hpp"
-#include "../engine/Graphics.hpp"
-#include <memory>
+
 #include <set>
 #include <stdexcept>
-#include <type_traits>
-#include <vulkan/vulkan.hpp>
+
+#include "../engine/Graphics.hpp"
 
 namespace
 {

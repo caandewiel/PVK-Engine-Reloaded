@@ -1,15 +1,14 @@
 #include "Fence.hpp"
-#include "../engine/Graphics.hpp"
-#include <iterator>
-#include <memory>
-#include <type_traits>
+
 #include <vulkan/vulkan.hpp>
+
+#include "../engine/Graphics.hpp"
 
 namespace pvk::vulkan
 {
 Fence::Fence(vk::FenceCreateFlags flags)
 {
-    vk::FenceCreateInfo createInfo {};
+    vk::FenceCreateInfo createInfo{};
     createInfo.setFlags(flags);
 
     this->m_fence = graphics::get()->getDevice().getLogicalDevice().createFence(createInfo);

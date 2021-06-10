@@ -2,7 +2,6 @@
 #define __RENDERPASSMAKER_H__
 
 #include "Device.hpp"
-#include "SwapChain.hpp"
 #include <memory>
 #include <vulkan/vulkan.hpp>
 

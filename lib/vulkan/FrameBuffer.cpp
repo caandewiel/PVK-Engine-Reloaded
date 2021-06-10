@@ -1,8 +1,6 @@
 #include "FrameBuffer.hpp"
+
 #include "../engine/Graphics.hpp"
-#include <memory>
-#include <type_traits>
-#include <vulkan/vulkan.hpp>
 
 namespace pvk::vulkan
 {

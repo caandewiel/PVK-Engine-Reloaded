@@ -1,6 +1,7 @@
+#include <fmt/core.h>
+
 #include "Application.hpp"
 #include "Engine.hpp"
-#include "fmt/core.h"
 
 namespace pvk
 {
@@ -22,7 +23,6 @@ void Application::run()
 void log(const std::string &message)
 {
     pvk::graphics::get()->getRenderPipeline<pvk::engine::RenderPipeline>().getRenderStageUI().getLogger().addLog(
-        fmt::format("{}\n", message).c_str()
-    );
+        fmt::format("{}\n", message).c_str());
 }
 } // namespace pvk

@@ -1,10 +1,12 @@
 #include "RenderPipeline.hpp"
 
-#include "../vulkan/Helper.hpp"
-#include "Graphics.hpp"
 #include <memory>
 #include <type_traits>
 #include <utility>
+
+#include "../vulkan/Helper.hpp"
+
+#include "Graphics.hpp"
 
 namespace pvk::engine
 {
@@ -63,7 +65,7 @@ void RenderPipeline::render()
     this->presentGraphicsQueue(imageIndex);
 }
 
-void RenderPipeline::registerRenderStage(const std::string &identifier, std::unique_ptr<RenderStageBase> &&renderStage) 
+void RenderPipeline::registerRenderStage(const std::string &identifier, std::unique_ptr<RenderStageBase> &&renderStage)
 {
     m_renderStages.insert(std::make_pair(identifier, std::move(renderStage)));
 }
@@ -93,12 +95,12 @@ const vulkan::Pipeline &RenderPipeline::getPipeline() const
     return *m_pipeline;
 }
 
-const ui::RenderStageUI& RenderPipeline::getRenderStageUI() const
+const ui::RenderStageUI &RenderPipeline::getRenderStageUI() const
 {
     return *m_renderStageUI;
 }
 
-void RenderPipeline::registerWidget(const std::string &identifier, std::unique_ptr<ui::Widget> &&widget) 
+void RenderPipeline::registerWidget(const std::string &identifier, std::unique_ptr<ui::Widget> &&widget)
 {
     m_renderStageUI->registerWidget(identifier, std::move(widget));
 }

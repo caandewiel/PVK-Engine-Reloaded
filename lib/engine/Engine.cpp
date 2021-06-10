@@ -1,9 +1,12 @@
 #include "Engine.hpp"
-#include "Application.hpp"
-#include "Graphics.hpp"
+
 #include <memory>
+
 #include <vulkan/vulkan.hpp>
 #include <vulkan/vulkan_core.h>
+
+#include "Application.hpp"
+#include "Graphics.hpp"
 
 namespace pvk::engine
 {

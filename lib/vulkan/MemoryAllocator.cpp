@@ -1,10 +1,10 @@
 #include "MemoryAllocator.hpp"
-#include "../engine/Graphics.hpp"
-#include <memory>
 
 #define VMA_IMPLEMENTATION
 #define VMA_DYNAMIC_VULKAN_FUNCTIONS 1
 #include <vk_mem_alloc.h>
+
+#include "../engine/Graphics.hpp"
 
 namespace pvk::vulkan
 {
@@ -27,7 +27,7 @@ MemoryAllocator::~MemoryAllocator()
     vmaDestroyAllocator(*m_allocator);
 }
 
-const VmaAllocator& MemoryAllocator::getAllocator() const
+const VmaAllocator &MemoryAllocator::getAllocator() const
 {
     return *m_allocator;
 }

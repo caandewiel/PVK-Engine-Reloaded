@@ -1,14 +1,17 @@
-#include <GLFW/glfw3.h>
 #include <memory>
 #include <sstream>
 #include <type_traits>
+
+#include <GLFW/glfw3.h>
+
 #define VULKAN_HPP_DISPATCH_LOADER_DYNAMIC 1
 #include <vulkan/vulkan.hpp>
 #include <vulkan/vulkan_core.h>
 VULKAN_HPP_DEFAULT_DISPATCH_LOADER_DYNAMIC_STORAGE
 
-#include "../engine/Graphics.hpp"
 #include "Instance.hpp"
+
+#include "../engine/Graphics.hpp"
 
 namespace
 {

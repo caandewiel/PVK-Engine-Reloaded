@@ -2,7 +2,6 @@
 #define __SURFACE_H__
 
 #include "Instance.hpp"
-#include "Window.hpp"
 #include <memory>
 #include <vulkan/vulkan.hpp>
 

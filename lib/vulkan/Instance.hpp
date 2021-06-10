@@ -3,7 +3,7 @@
 
 #include <iostream>
 #include <memory>
-#include <unordered_map>
+
 #include <vulkan/vulkan.hpp>
 
 namespace pvk::vulkan

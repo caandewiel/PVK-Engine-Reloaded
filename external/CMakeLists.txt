@@ -8,6 +8,11 @@ add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/abseil-cpp")
 add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/fmt")
 
 # Assimp
+set(ASSIMP_SHARED_LIBS OFF)
+set(ASSIMP_NO_EXPORT ON)
+set(ASSIMP_BUILD_TESTS OFF)
+set(ASSIMP_INSTALL OFF)
+
 add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/assimp")
 
 # SPIRV-Cross

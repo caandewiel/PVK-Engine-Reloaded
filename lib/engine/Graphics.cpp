@@ -1,19 +1,23 @@
 #include "Graphics.hpp"
-#include "../ui/RenderStageUI.hpp"
-#include "../vulkan/Helper.hpp"
-#include "Engine.hpp"
-#include "RenderPipeline.hpp"
-#include "exceptions/PvkExceptionGraphics.hpp"
+
 #include <cstdint>
-#include <fmt/core.h>
 #include <functional>
 #include <limits>
 #include <memory>
 #include <sstream>
 #include <stdexcept>
 #include <type_traits>
+
+#include <fmt/core.h>
+
 #include <vulkan/vulkan.hpp>
 #include <vulkan/vulkan_core.h>
+
+#include "../ui/RenderStageUI.hpp"
+#include "../vulkan/Helper.hpp"
+#include "Engine.hpp"
+#include "RenderPipeline.hpp"
+#include "exceptions/PvkExceptionGraphics.hpp"
 
 namespace pvk::graphics
 {
@@ -47,7 +51,8 @@ void Graphics::initialize()
 
 void Graphics::draw() const
 {
-    if (m_renderPipeline == nullptr) {
+    if (m_renderPipeline == nullptr)
+    {
         throw PvkExceptionGraphics("Cannot start rendering stage when no render pipeline is defined.");
     }
 
@@ -78,16 +83,18 @@ void Graphics::destroy()
 
 const vulkan::Window &Graphics::getWindow() const
 {
-    if (m_window == nullptr) {
+    if (m_window == nullptr)
+    {
         throw PvkExceptionGraphics("Window has not yet been initialized.");
     }
-    
+
     return *m_window;
 }
 
 const vulkan::Instance &Graphics::getInstance() const
 {
-    if (m_instance == nullptr) {
+    if (m_instance == nullptr)
+    {
         throw PvkExceptionGraphics("Instance has not yet been initialized.");
     }
 
@@ -96,7 +103,8 @@ const vulkan::Instance &Graphics::getInstance() const
 
 const vulkan::Device &Graphics::getDevice() const
 {
-    if (m_device == nullptr) {
+    if (m_device == nullptr)
+    {
         throw PvkExceptionGraphics("Device has not yet been initialized.");
     }
 
@@ -105,7 +113,8 @@ const vulkan::Device &Graphics::getDevice() const
 
 const vulkan::Surface &Graphics::getSurface() const
 {
-    if (m_surface == nullptr) {
+    if (m_surface == nullptr)
+    {
         throw PvkExceptionGraphics("Surface has not yet been initialized.");
     }
 
@@ -114,7 +123,8 @@ const vulkan::Surface &Graphics::getSurface() const
 
 const vulkan::SwapChain &Graphics::getSwapChain() const
 {
-    if (m_swapChain == nullptr) {
+    if (m_swapChain == nullptr)
+    {
         throw PvkExceptionGraphics("Swapchain has not yet been initialized.");
     }
 
@@ -123,14 +133,15 @@ const vulkan::SwapChain &Graphics::getSwapChain() const
 
 const vulkan::MemoryAllocator &Graphics::getMemoryAllocator() const
 {
-    if (m_memoryAllocator == nullptr) {
+    if (m_memoryAllocator == nullptr)
+    {
         throw PvkExceptionGraphics("Memory allocator has not yet been initialized.");
     }
 
     return *m_memoryAllocator;
 }
 
-void Graphics::setRenderPipeline(std::unique_ptr<engine::RenderPipeline> &&renderPipeline) 
+void Graphics::setRenderPipeline(std::unique_ptr<engine::RenderPipeline> &&renderPipeline)
 {
     m_renderPipeline = std::move(renderPipeline);
 }

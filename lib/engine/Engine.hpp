@@ -1,10 +1,11 @@
 #ifndef ENGINE_HPP
 #define ENGINE_HPP
 
+#include <memory>
+
 #include "../vulkan/Device.hpp"
 #include "Application.hpp"
 #include "Graphics.hpp"
-#include <memory>
 
 namespace pvk::engine
 {

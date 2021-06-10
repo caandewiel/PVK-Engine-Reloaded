@@ -1,11 +1,6 @@
 #include "Helper.hpp"
-#include "../engine/Graphics.hpp"
-#include "CommandBuffer.hpp"
-#include "CommandPool.hpp"
+
 #include "Fence.hpp"
-#include <limits>
-#include <memory>
-#include <vulkan/vulkan.hpp>
 
 namespace pvk::vulkan
 {
@@ -52,4 +47,4 @@ void executeOneTimeCommandBuffer(
     graphics::get()->getDevice().getGraphicsQueue().submit(submitInfo, nullptr);
     graphics::get()->getDevice().getLogicalDevice().waitIdle();
 }
-} // namespace pvk::helper
+} // namespace pvk::vulkan

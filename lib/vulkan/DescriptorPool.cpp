@@ -1,7 +1,6 @@
 #include "DescriptorPool.hpp"
-#include "../engine/Graphics.hpp"
 
-#include <vulkan/vulkan.hpp>
+#include "../engine/Graphics.hpp"
 
 namespace pvk::vulkan
 {
@@ -22,7 +21,7 @@ DescriptorPool::~DescriptorPool()
     graphics::get()->getDevice().getLogicalDevice().destroyDescriptorPool(m_descriptorPool);
 }
 
-const vk::DescriptorPool& DescriptorPool::getDescriptorPool() const
+const vk::DescriptorPool &DescriptorPool::getDescriptorPool() const
 {
     return m_descriptorPool;
 }

@@ -1,10 +1,9 @@
 #ifndef __FRAMEBUFFER_H__
 #define __FRAMEBUFFER_H__
 
-#include "RenderPass.hpp"
-#include "SwapChain.hpp"
-#include <memory>
 #include <vulkan/vulkan.hpp>
+
+#include "RenderPass.hpp"
 
 namespace pvk::vulkan
 {
@@ -17,7 +16,7 @@ public:
     [[nodiscard]] const vk::Framebuffer &getFrameBuffer(uint32_t index) const;
 
 private:
-    std::vector<vk::Framebuffer> m_frameBuffers {};
+    std::vector<vk::Framebuffer> m_frameBuffers{};
 };
 } // namespace pvk::vulkan
 

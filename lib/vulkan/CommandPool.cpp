@@ -1,7 +1,9 @@
 #include "CommandPool.hpp"
-#include "../engine/Graphics.hpp"
 #include <memory>
+
 #include <vulkan/vulkan.hpp>
+
+#include "../engine/Graphics.hpp"
 
 namespace pvk::vulkan
 {
@@ -25,4 +27,4 @@ const vk::CommandPool &CommandPool::getCommandPool() const
 {
     return m_commandPool;
 }
-} // namespace pvk::command_pool
+} // namespace pvk::vulkan

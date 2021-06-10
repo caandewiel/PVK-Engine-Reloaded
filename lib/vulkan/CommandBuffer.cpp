@@ -1,8 +1,11 @@
 #include "CommandBuffer.hpp"
-#include "../engine/Graphics.hpp"
+
 #include <memory>
 #include <type_traits>
+
 #include <vulkan/vulkan.hpp>
+
+#include "../engine/Graphics.hpp"
 
 namespace pvk::command_buffer
 {

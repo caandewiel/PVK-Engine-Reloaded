@@ -1,9 +1,10 @@
 #ifndef __COMMANDBUFFER_H__
 #define __COMMANDBUFFER_H__
 
+#include <vulkan/vulkan.hpp>
+
 #include "CommandPool.hpp"
 #include "Device.hpp"
-#include <vulkan/vulkan.hpp>
 
 namespace pvk::command_buffer
 {
@@ -21,8 +22,7 @@ private:
     std::vector<vk::CommandBuffer> m_commandBuffers;
 };
 
-std::unique_ptr<CommandBuffer> create(const vulkan::Device &device,
-                                      const vulkan::CommandPool &commandPool);
+std::unique_ptr<CommandBuffer> create(const vulkan::Device &device, const vulkan::CommandPool &commandPool);
 } // namespace pvk::command_buffer
 
 #endif // __COMMANDBUFFER_H__

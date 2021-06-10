@@ -1,8 +1,11 @@
 #include "RenderStageBase.hpp"
+
+#include <memory>
+
+#include <vulkan/vulkan.hpp>
+
 #include "Graphics.hpp"
 #include "pipeline/ShaderReflection.hpp"
-#include <memory>
-#include <vulkan/vulkan.hpp>
 
 namespace
 {

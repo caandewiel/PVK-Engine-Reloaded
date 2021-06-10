@@ -1,11 +1,12 @@
 #ifndef __DEVICE_H__
 #define __DEVICE_H__
 
-#include "Instance.hpp"
-#include "Surface.hpp"
 #include <memory>
 #include <optional>
+
 #include <vulkan/vulkan.hpp>
+
+#include "Instance.hpp"
 
 namespace pvk::vulkan
 {

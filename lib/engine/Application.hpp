@@ -1,8 +1,9 @@
 #ifndef __APPLICATION_H__
 #define __APPLICATION_H__
 
-#include "../vulkan/CommandBuffer.hpp"
 #include <functional>
+
+#include "../vulkan/CommandBuffer.hpp"
 
 namespace pvk
 {

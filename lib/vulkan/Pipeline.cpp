@@ -1,13 +1,16 @@
 #include "Pipeline.hpp"
 
-#include "../engine/Graphics.hpp"
-#include "../io/io.hpp"
-#include "RenderPass.hpp"
-#include "SwapChain.hpp"
 #include <array>
 #include <memory>
 #include <type_traits>
+
 #include <vulkan/vulkan.hpp>
+
+#include "RenderPass.hpp"
+#include "SwapChain.hpp"
+
+#include "../engine/Graphics.hpp"
+#include "../io/io.hpp"
 
 namespace pvk::vulkan
 {
@@ -173,7 +176,7 @@ Pipeline::Pipeline(const vulkan::RenderPass &renderPass,
     }
 }
 
-Pipeline::~Pipeline() 
+Pipeline::~Pipeline()
 {
     graphics::get()->getDevice().getLogicalDevice().destroyPipelineLayout(m_pipelineLayout);
     graphics::get()->getDevice().getLogicalDevice().destroyPipeline(m_pipeline);

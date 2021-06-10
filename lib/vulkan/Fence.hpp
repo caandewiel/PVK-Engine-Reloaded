@@ -1,8 +1,6 @@
 #ifndef __FENCE_H__
 #define __FENCE_H__
 
-#include "Device.hpp"
-#include <memory>
 #include <vulkan/vulkan.hpp>
 
 namespace pvk::vulkan

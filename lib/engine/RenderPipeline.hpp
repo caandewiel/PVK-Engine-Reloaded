@@ -1,12 +1,14 @@
 #ifndef RENDERPIPELINE_HPP
 #define RENDERPIPELINE_HPP
 
-#include <absl/container/flat_hash_map.h>
 #include <memory>
 #include <sstream>
 #include <string>
 #include <type_traits>
 #include <utility>
+
+#include <absl/container/flat_hash_map.h>
+
 #include <vulkan/vulkan.hpp>
 
 #include "../vulkan/CommandBuffer.hpp"
@@ -18,6 +20,7 @@
 #include "../vulkan/Semaphore.hpp"
 
 #include "../ui/RenderStageUI.hpp"
+
 #include "RenderStageBase.hpp"
 
 namespace pvk::engine
