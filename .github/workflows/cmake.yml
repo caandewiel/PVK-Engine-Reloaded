@@ -26,10 +26,10 @@ jobs:
       DEBIAN_FRONTEND: "noninteractive"
 
     steps:
-    - name: Checkout repository and submodules
+    - name: Checkout repository
       uses: actions/checkout@v2
-      with:
-        submodules: recursive
+    - name: Checkout submodules
+      uses: textbook/git-checkout-submodule-action@2.1.1
 
     - name: Install necessary packages
       shell: bash
