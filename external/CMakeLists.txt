@@ -45,7 +45,6 @@ target_sources(lz4 PRIVATE ${LZ4_SRCS_LIB} ${LZ4_SRCS})
 
 # FontAwesome
 target_include_directories(fa INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/FontAwesome/")
-set_target_properties(fa PROPERTIES LINKER_LANGUAGE CXX)
 
 # VMA
 target_include_directories(vma INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/proxy")
