@@ -1,4 +1,5 @@
-![clang build](https://github.com/caandewiel/PVK-Engine-Reloaded/actions/workflows/cmake.yml/badge.svg)
+![engine build](https://github.com/caandewiel/PVK-Engine-Reloaded/actions/workflows/build_engine.yml/badge.svg)
+![asset manager build](https://github.com/caandewiel/PVK-Engine-Reloaded/actions/workflows/build_asset_manager.yml/badge.svg)
 
 # PVK Engine Reloaded
 
