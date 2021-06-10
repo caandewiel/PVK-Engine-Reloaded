@@ -1,5 +1,7 @@
 #include "io.hpp"
 
+#include <memory>
+
 namespace pvk::io
 {
 std::vector<uint32_t> readFile(const std::string &filename)

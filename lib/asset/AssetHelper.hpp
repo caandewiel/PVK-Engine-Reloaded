@@ -5,6 +5,7 @@
 #include <fstream>
 #include <stdexcept>
 #include <vector>
+#include <memory>
 
 #include <json.hpp>
 
