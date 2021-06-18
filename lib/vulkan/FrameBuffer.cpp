@@ -1,4 +1,5 @@
 #include "FrameBuffer.hpp"
+#include <array>
 
 #include "../engine/Graphics.hpp"
 
@@ -13,10 +14,12 @@ FrameBuffer::FrameBuffer(const vulkan::RenderPass &renderPass)
     {
         try
         {
+            std::array<vk::ImageView, 2> attachments = {swapChain.getSwapChainImageView(i), swapChain.getDepthImage().getImageView()};
+
             vk::FramebufferCreateInfo frameBufferCreateInfo;
             frameBufferCreateInfo.setFlags(vk::FramebufferCreateFlags());
             frameBufferCreateInfo.setRenderPass(renderPass.getRenderPass());
-            frameBufferCreateInfo.setAttachments(swapChain.getSwapChainImageView(i));
+            frameBufferCreateInfo.setAttachments(attachments);
             frameBufferCreateInfo.setWidth(swapChain.getSwapChainExtent().width);
             frameBufferCreateInfo.setHeight(swapChain.getSwapChainExtent().height);
             frameBufferCreateInfo.setLayers(1);

@@ -9,6 +9,8 @@
 #include "Drawable.hpp"
 
 #include "../vulkan/Buffer.hpp"
+#include "glm/ext/vector_float3.hpp"
+#include "glm/fwd.hpp"
 
 namespace pvk::geometry
 {
@@ -37,11 +39,16 @@ public:
 
     void draw(const pvk::command_buffer::CommandBuffer &commandBuffer) const override;
 
+    [[nodiscard]] std::pair<glm::vec3, glm::vec3> getBounds() const;
+
 private:
     uint32_t m_numVertices;
     std::unique_ptr<vulkan::Buffer> m_vertexBuffer;
     uint32_t m_numIndices;
     std::unique_ptr<vulkan::Buffer> m_indexBuffer;
+
+    glm::vec3 m_minBounds;
+    glm::vec3 m_maxBounds;
 };
 } // namespace pvk::geometry
 

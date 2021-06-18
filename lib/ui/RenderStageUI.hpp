@@ -17,7 +17,7 @@
 #include "LogWidget.hpp"
 #include "OverlayWidget.hpp"
 
-#include "../engine/RenderStage.hpp"
+#include "../engine/render_stage/RenderStage.hpp"
 #include "../vulkan/CommandBuffer.hpp"
 
 namespace pvk::ui

@@ -40,7 +40,7 @@ RenderStageUI::RenderStageUI(const vulkan::CommandPool &commandPool, const vulka
     m_descriptorPool = std::make_unique<vulkan::DescriptorPool>(poolSizes);
 
     m_context = ImGui::CreateContext();
-    ImGui_ImplGlfw_InitForVulkan(graphics::get()->getWindow().getWindow(), true);
+    ImGui_ImplGlfw_InitForVulkan(graphics::get()->getWindow().getWindow(), false);
 
     ImGui_ImplVulkan_InitInfo initInfo = {};
     initInfo.Instance = graphics::get()->getInstance().getInstance();

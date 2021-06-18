@@ -13,16 +13,21 @@ namespace pvk::vulkan
 class Pipeline
 {
 public:
-    Pipeline(const vulkan::RenderPass &renderPass, const std::string &vertexShader, const std::string &fragmentShader);
-    Pipeline(const vk::Pipeline &pipeline, const vk::PipelineLayout &pipelineLayout, std::vector<vk::ShaderModule> &&shaderModules);
+    Pipeline(const vk::Pipeline &pipeline,
+             const vk::PipelineLayout &pipelineLayout,
+             std::vector<vk::ShaderModule> &&shaderModules,
+             std::vector<vk::DescriptorSetLayout> &&descriptorSetLayouts);
     ~Pipeline();
 
+    [[nodiscard]] const vk::DescriptorSetLayout &getDescriptorSetLayout(uint32_t index) const;
     [[nodiscard]] const vk::Pipeline &getPipeline() const;
+    [[nodiscard]] const vk::PipelineLayout &getPipelineLayout() const;
 
 private:
     vk::Pipeline m_pipeline;
     vk::PipelineLayout m_pipelineLayout;
     std::vector<vk::ShaderModule> m_shaderModules;
+    std::vector<vk::DescriptorSetLayout> m_descriptorSetLayouts;
 };
 } // namespace pvk::vulkan
 

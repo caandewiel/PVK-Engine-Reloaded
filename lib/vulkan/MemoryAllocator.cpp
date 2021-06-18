@@ -1,4 +1,5 @@
 #include "MemoryAllocator.hpp"
+#include <memory>
 
 #define VMA_IMPLEMENTATION
 #define VMA_DYNAMIC_VULKAN_FUNCTIONS 1
@@ -54,5 +55,29 @@ std::unique_ptr<Buffer> MemoryAllocator::createBuffer(const vk::BufferCreateInfo
         *m_allocator, &bufferCreateInfoBackwardsCompatible, &allocationCreateInfo, &buffer, &allocation, nullptr);
 
     return std::make_unique<pvk::vulkan::Buffer>(std::move(buffer), std::move(allocation));
+}
+
+std::unique_ptr<Image> MemoryAllocator::createImage(vk::ImageCreateInfo &imageCreateInfo,
+                                                    vk::ImageViewCreateInfo &imageViewCreateInfo,
+                                                    VmaAllocationCreateInfo &allocationCreateInfo) const
+{
+
+    auto imageCreateInfoBackwardsCompatible = static_cast<VkImageCreateInfo>(imageCreateInfo);
+
+    VkImage image = {};
+    VmaAllocation allocation = {};
+
+    vmaCreateImage(*m_allocator,
+                   &imageCreateInfoBackwardsCompatible,
+                   &allocationCreateInfo,
+                   &image,
+                   &allocation,
+                   nullptr);
+
+    imageViewCreateInfo.setImage(image);
+
+    auto imageView = graphics::get()->getDevice().getLogicalDevice().createImageView(imageViewCreateInfo);
+
+    return std::make_unique<Image>(image, imageView, allocation);
 }
 } // namespace pvk::vulkan

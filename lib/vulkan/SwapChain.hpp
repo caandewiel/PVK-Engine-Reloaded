@@ -6,6 +6,7 @@
 #include <vulkan/vulkan.hpp>
 
 #include "Device.hpp"
+#include "Image.hpp"
 #include "Window.hpp"
 
 namespace pvk::vulkan
@@ -24,6 +25,8 @@ public:
 
     [[nodiscard]] const std::vector<vk::Image> &getSwapChainImages() const;
 
+    [[nodiscard]] const Image &getDepthImage() const;
+
     [[nodiscard]] const vk::ImageView &getSwapChainImageView(uint8_t index) const;
 
     [[nodiscard]] const vk::Extent2D &getSwapChainExtent() const;
@@ -32,6 +35,7 @@ private:
     vk::SwapchainKHR m_swapChain;
     std::vector<vk::Image> m_swapChainImages;
     std::vector<vk::ImageView> m_swapChainImageViews;
+    std::unique_ptr<Image> m_depthImage;
     vk::SurfaceFormatKHR m_surfaceFormat;
     vk::Extent2D m_extent;
 };

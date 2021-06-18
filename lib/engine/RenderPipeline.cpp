@@ -1,8 +1,10 @@
 #include "RenderPipeline.hpp"
 
+#include <array>
 #include <memory>
 #include <type_traits>
 #include <utility>
+#include <vulkan/vulkan.hpp>
 
 #include "../vulkan/Helper.hpp"
 
@@ -42,15 +44,16 @@ void RenderPipeline::render()
     commandBuffer.reset();
     commandBuffer.begin({vk::CommandBufferUsageFlagBits::eOneTimeSubmit});
 
-    vk::ClearValue clearValue;
-    clearValue.setColor(vk::ClearColorValue(std::array<float, 4>{1.0F, 1.0F, 1.0F, 1.0F}));
+    std::array<vk::ClearValue, 2> clearValues = {};
+    clearValues[0].setColor(vk::ClearColorValue(std::array<float, 4>{1.0F, 1.0F, 1.0F, 1.0F}));
+    clearValues[1].depthStencil.setDepth(1.0F);
 
     vk::RenderPassBeginInfo renderPassBeginInfo;
     renderPassBeginInfo.setRenderPass(m_renderPass->getRenderPass());
     renderPassBeginInfo.setFramebuffer(m_frameBuffer->getFrameBuffer(imageIndex));
     renderPassBeginInfo.renderArea.offset = vk::Offset2D(0, 0);
     renderPassBeginInfo.renderArea.extent = graphics::get()->getSwapChain().getSwapChainExtent();
-    renderPassBeginInfo.setClearValues(clearValue);
+    renderPassBeginInfo.setClearValues(clearValues);
 
     commandBuffer.beginRenderPass(renderPassBeginInfo, vk::SubpassContents::eInline);
 
@@ -98,6 +101,11 @@ const vulkan::Pipeline &RenderPipeline::getPipeline() const
 const ui::RenderStageUI &RenderPipeline::getRenderStageUI() const
 {
     return *m_renderStageUI;
+}
+
+void RenderPipeline::log(const std::string &content) const
+{
+    m_renderStageUI->getLogger().addLog(content.c_str());
 }
 
 void RenderPipeline::registerWidget(const std::string &identifier, std::unique_ptr<ui::Widget> &&widget)

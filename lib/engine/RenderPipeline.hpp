@@ -11,6 +11,8 @@
 
 #include <vulkan/vulkan.hpp>
 
+#include "render_stage/RenderStage.hpp"
+
 #include "../vulkan/CommandBuffer.hpp"
 #include "../vulkan/CommandPool.hpp"
 #include "../vulkan/Fence.hpp"
@@ -20,8 +22,6 @@
 #include "../vulkan/Semaphore.hpp"
 
 #include "../ui/RenderStageUI.hpp"
-
-#include "RenderStage.hpp"
 
 namespace pvk::engine
 {
@@ -52,6 +52,8 @@ public:
     [[nodiscard]] const vulkan::FrameBuffer &getFrameBuffer() const;
     [[nodiscard]] const vulkan::Pipeline &getPipeline() const;
     [[nodiscard]] const ui::RenderStageUI &getRenderStageUI() const;
+
+    void log(const std::string &content) const;
 
     void registerWidget(const std::string &identifier, std::unique_ptr<ui::Widget> &&widget);
 

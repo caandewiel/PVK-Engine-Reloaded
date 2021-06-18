@@ -5,7 +5,7 @@
 #include <memory>
 #include <vulkan/vulkan.hpp>
 
-#include "../RenderStage.hpp"
+#include "RenderStage.hpp"
 
 #include "../../vulkan/DescriptorPool.hpp"
 #include "../../vulkan/RenderPass.hpp"

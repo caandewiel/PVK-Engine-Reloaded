@@ -27,6 +27,22 @@ template <typename T> T assertVulkan(const vk::ResultValue<T> &result, std::stri
     return result.value;
 }
 
+std::unique_ptr<pvk::vulkan::Buffer> createEmptyBuffer(size_t bufferSize,
+                                                       vk::BufferUsageFlags bufferUsage,
+                                                       VmaMemoryUsage memoryUsage);
+
+std::unique_ptr<Image> createImage2D(uint32_t width,
+                                     uint32_t height,
+                                     uint32_t mipLevels,
+                                     uint32_t arrayLayers,
+                                     vk::SampleCountFlagBits numSamples,
+                                     vk::Format format,
+                                     vk::ImageTiling tiling,
+                                     vk::ImageUsageFlags usage,
+                                     vk::MemoryPropertyFlags properties,
+                                     vk::ImageCreateFlags imageCreateFlags,
+                                     vk::ImageAspectFlags imageAspectFlags);
+
 template <typename T>
 std::unique_ptr<pvk::vulkan::Buffer> createBuffer(std::vector<T> &&data,
                                                   vk::BufferUsageFlags bufferUsage,
@@ -58,6 +74,6 @@ void executeOneTimeCommandBuffer(
 
 void executeOneTimeCommandBuffer(
     std::function<void(const pvk::command_buffer::CommandBuffer &commandBuffer)> &&function);
-} // namespace pvk::helper
+} // namespace pvk::vulkan
 
 #endif // HELPER_HPP

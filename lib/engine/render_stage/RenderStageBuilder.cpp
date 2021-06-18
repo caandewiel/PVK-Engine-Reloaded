@@ -96,11 +96,26 @@ vk::PipelineVertexInputStateCreateInfo initializeVertexInputStateCreateInfo()
 
     return vertexInputStateCreateInfo;
 }
+
+vk::PipelineDepthStencilStateCreateInfo initializeDepthStencilStateCreateInfo()
+{
+    vk::PipelineDepthStencilStateCreateInfo depthStencilStateCreateInfo;
+    depthStencilStateCreateInfo.setDepthTestEnable(VK_TRUE);
+    depthStencilStateCreateInfo.setDepthWriteEnable(VK_TRUE);
+    depthStencilStateCreateInfo.setDepthCompareOp(vk::CompareOp::eLessOrEqual);
+    depthStencilStateCreateInfo.setDepthBoundsTestEnable(VK_FALSE);
+    depthStencilStateCreateInfo.setMinDepthBounds(0.0F);
+    depthStencilStateCreateInfo.setMaxDepthBounds(1.0F);
+    depthStencilStateCreateInfo.setStencilTestEnable(VK_FALSE);
+
+    return depthStencilStateCreateInfo;
+}
 } // namespace
 
 namespace
 {
-vk::PipelineLayout initializePipelineLayout(const pvk::engine::pipeline::PipelineDefinition &pipelineDefinition)
+std::vector<vk::DescriptorSetLayout> initializeDescriptorSetLayouts(
+    const pvk::engine::pipeline::PipelineDefinition &pipelineDefinition)
 {
     const auto &device = pvk::graphics::get()->getDevice().getLogicalDevice();
 
@@ -114,9 +129,12 @@ vk::PipelineLayout initializePipelineLayout(const pvk::engine::pipeline::Pipelin
         descriptorSetLayouts.emplace_back(device.createDescriptorSetLayout(descriptorSetLayoutCreateInfo));
     }
 
-    vk::PipelineLayoutCreateInfo pipelineLayoutCreateInfo{};
-    pipelineLayoutCreateInfo.setSetLayouts(descriptorSetLayouts);
+    return descriptorSetLayouts;
+}
 
+std::vector<vk::PushConstantRange> initializePushConstantRanges(
+    const pvk::engine::pipeline::PipelineDefinition &pipelineDefinition)
+{
     std::vector<vk::PushConstantRange> pushConstantRanges;
 
     for (const auto &[identifier, descriptor] : pipelineDefinition.pushConstantDefinitions)
@@ -129,6 +147,17 @@ vk::PipelineLayout initializePipelineLayout(const pvk::engine::pipeline::Pipelin
         pushConstantRanges.emplace_back(pushConstantRange);
     }
 
+    return pushConstantRanges;
+}
+
+vk::PipelineLayout initializePipelineLayout(const pvk::engine::pipeline::PipelineDefinition &pipelineDefinition,
+                                            const std::vector<vk::DescriptorSetLayout> &descriptorSetLayouts,
+                                            const std::vector<vk::PushConstantRange> &pushConstantRanges)
+{
+    const auto &device = pvk::graphics::get()->getDevice().getLogicalDevice();
+
+    vk::PipelineLayoutCreateInfo pipelineLayoutCreateInfo{};
+    pipelineLayoutCreateInfo.setSetLayouts(descriptorSetLayouts);
     pipelineLayoutCreateInfo.setPushConstantRanges(pushConstantRanges);
 
     return device.createPipelineLayout(pipelineLayoutCreateInfo);
@@ -191,10 +220,10 @@ std::unique_ptr<pvk::engine::RenderStage> RenderStageBuilder::create()
     const auto &device = graphics::get()->getDevice();
     const auto &swapChain = graphics::get()->getSwapChain();
 
-    const auto pipelineDefinition =
-        createPipelineDefinitionFromSPIRVShader(m_pathToVertexShader, m_pathToFragmentShader);
-
-    auto pipelineLayout = initializePipelineLayout(pipelineDefinition);
+    auto pipelineDefinition = createPipelineDefinitionFromSPIRVShader(m_pathToVertexShader, m_pathToFragmentShader);
+    auto descriptorSetLayouts = initializeDescriptorSetLayouts(pipelineDefinition);
+    auto pushConstantRanges = initializePushConstantRanges(pipelineDefinition);
+    auto pipelineLayout = initializePipelineLayout(pipelineDefinition, descriptorSetLayouts, pushConstantRanges);
 
     auto vertexShaderModule = createShaderModule(device, m_pathToVertexShader);
     auto fragmentShaderModule = createShaderModule(device, m_pathToFragmentShader);
@@ -214,6 +243,7 @@ std::unique_ptr<pvk::engine::RenderStage> RenderStageBuilder::create()
     const auto multisampleStateCreateInfo = initializeMultisampleStateCreateInfo();
     const auto inputAssemblyStateCreateInfo = initializeInputAssemblyStateCreateInfo();
     const auto vertexInputStateCreateInfo = initializeVertexInputStateCreateInfo();
+    const auto depthStencilStateCreateInfo = initializeDepthStencilStateCreateInfo();
 
     vk::PipelineShaderStageCreateInfo vertexShaderStage;
     vertexShaderStage.setFlags(vk::PipelineShaderStageCreateFlags());
@@ -241,6 +271,7 @@ std::unique_ptr<pvk::engine::RenderStage> RenderStageBuilder::create()
     pipelineCreateInfo.setPColorBlendState(&colorBlendingStateCreateInfo);
     pipelineCreateInfo.setPVertexInputState(&vertexInputStateCreateInfo);
     pipelineCreateInfo.setPInputAssemblyState(&inputAssemblyStateCreateInfo);
+    pipelineCreateInfo.setPDepthStencilState(&depthStencilStateCreateInfo);
     pipelineCreateInfo.setSubpass(0);
 
     auto vulkanPipeline = device.getLogicalDevice().createGraphicsPipeline(nullptr, pipelineCreateInfo);
@@ -252,8 +283,10 @@ std::unique_ptr<pvk::engine::RenderStage> RenderStageBuilder::create()
         shaderModules.emplace_back(fragmentShaderModule);
 
         return std::make_unique<pvk::engine::RenderStage>(
-            std::make_unique<pvk::vulkan::Pipeline>(vulkanPipeline.value, pipelineLayout, std::move(shaderModules)),
-            initializeDescriptorPool());
+            std::make_unique<pvk::vulkan::Pipeline>(
+                vulkanPipeline.value, pipelineLayout, std::move(shaderModules), std::move(descriptorSetLayouts)),
+            initializeDescriptorPool(),
+            std::move(pipelineDefinition.descriptorDefinitions));
     }
 
     throw std::runtime_error("BOEM");

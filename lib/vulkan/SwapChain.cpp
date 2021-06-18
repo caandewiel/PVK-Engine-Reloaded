@@ -1,14 +1,15 @@
 #include "SwapChain.hpp"
-#include "../engine/Graphics.hpp"
-#include "Device.hpp"
-#include "Surface.hpp"
-#include "Window.hpp"
 #include <algorithm>
 #include <memory>
 #include <stdexcept>
 #include <type_traits>
 #include <vector>
 #include <vulkan/vulkan.hpp>
+#include "../engine/Graphics.hpp"
+#include "Device.hpp"
+#include "Helper.hpp"
+#include "Surface.hpp"
+#include "Window.hpp"
 
 namespace
 {
@@ -181,6 +182,18 @@ SwapChain::SwapChain()
         m_swapChain = device.getLogicalDevice().createSwapchainKHR(createInfo);
         m_swapChainImages = device.getLogicalDevice().getSwapchainImagesKHR(m_swapChain);
         m_swapChainImageViews = createSwapChainImageViews(device, m_swapChainImages, m_surfaceFormat.format);
+
+        m_depthImage = createImage2D(m_extent.width,
+                                     m_extent.height,
+                                     1,
+                                     1,
+                                     vk::SampleCountFlagBits::e1,
+                                     vk::Format::eD32Sfloat,
+                                     vk::ImageTiling::eOptimal,
+                                     vk::ImageUsageFlagBits::eDepthStencilAttachment,
+                                     vk::MemoryPropertyFlagBits::eDeviceLocal,
+                                     {},
+                                     vk::ImageAspectFlagBits::eDepth);
     }
     catch (vk::SystemError &error)
     {
@@ -195,6 +208,8 @@ SwapChain::~SwapChain()
     std::for_each(m_swapChainImageViews.begin(), m_swapChainImageViews.end(), [&logicalDevice](auto &imageView) {
         logicalDevice.destroyImageView(imageView);
     });
+
+    m_depthImage.reset();
 
     // SwapChain images are automatically destroyed when destroying the SwapChain.
     logicalDevice.destroySwapchainKHR(m_swapChain);
@@ -235,5 +250,10 @@ const vk::ImageView &SwapChain::getSwapChainImageView(uint8_t index) const
 const vk::Extent2D &SwapChain::getSwapChainExtent() const
 {
     return m_extent;
+}
+
+const Image &SwapChain::getDepthImage() const
+{
+    return *m_depthImage;
 }
 } // namespace pvk::vulkan

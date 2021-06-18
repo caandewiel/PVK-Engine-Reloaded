@@ -74,9 +74,9 @@ void Graphics::render(const Application &application) const
 void Graphics::destroy()
 {
     m_renderPipeline.reset();
-    m_memoryAllocator.reset();
     m_swapChain.reset();
     m_surface.reset();
+    m_memoryAllocator.reset();
     m_device.reset();
     m_instance.reset();
 }
