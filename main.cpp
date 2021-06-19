@@ -21,7 +21,7 @@
 #include "lib/engine/Application.hpp"
 #include "lib/engine/Graphics.hpp"
 #include "lib/engine/RenderPipeline.hpp"
-#include "lib/engine/camera/Camera.hpp"
+#include "lib/engine/camera/CameraArc.hpp"
 #include "lib/engine/render_stage/RenderStage.hpp"
 #include "lib/engine/render_stage/RenderStageBuilder.hpp"
 #include "lib/engine/shader/UniformBuffer.hpp"
@@ -55,14 +55,15 @@ public:
                 .create();
 
         auto swapChainExtent = pvk::graphics::get()->getSwapChain().getSwapChainExtent();
-        m_camera = std::make_unique<pvk::engine::Camera>(glm::vec3(0.0F, 0.0F, 0.0F), glm::vec3(0.0F, 0.0F, 1.0F));
 
-        m_object = pvk::io::loadObject("/Users/christian/walk2/walk2.object");
+        m_object = pvk::io::loadObject("/Users/christian/fox/fox.object");
         m_object->pushConstant("transform", &pushConstant);
 
         auto bounds = m_object->getBounds();
         auto center = (bounds.first + bounds.second) / glm::vec3(2.0F);
         auto radius = center - bounds.first - bounds.first;
+
+        m_camera = std::make_unique<pvk::engine::CameraArc>(radius, center, glm::vec3(0.0F, 0.0F, 1.0F));
 
         ubo.model = glm::mat4(1.0f);
         ubo.view = glm::lookAt(radius, center, glm::vec3(0.0f, 0.0f, 1.0f));
@@ -80,62 +81,12 @@ public:
         registerWidget("objectOverview", std::move(treeWidget));
 
         glfwSetCursorPosCallback(pvk::graphics::get()->getWindow().getWindow(), handleMouseInput);
+        glfwSetMouseButtonCallback(pvk::graphics::get()->getWindow().getWindow(), handleMouseButton);
         glfwSetKeyCallback(pvk::graphics::get()->getWindow().getWindow(), handleKeyBoardInput);
     }
 
     static void handleKeyBoardInput(GLFWwindow *window, int key, int scancode, int action, int mods)
     {
-        auto *app = reinterpret_cast<MyRenderPipeline *>(glfwGetWindowUserPointer(window));
-
-        switch (key)
-        {
-        case GLFW_KEY_W:
-            if (action == GLFW_PRESS)
-            {
-                app->wPressed = true;
-            }
-            else if (action == GLFW_RELEASE)
-            {
-                app->wPressed = false;
-            }
-            break;
-
-        case GLFW_KEY_A:
-            if (action == GLFW_PRESS)
-            {
-                app->aPressed = true;
-            }
-            else if (action == GLFW_RELEASE)
-            {
-                app->aPressed = false;
-            }
-            break;
-
-        case GLFW_KEY_S:
-            if (action == GLFW_PRESS)
-            {
-                app->sPressed = true;
-            }
-            else if (action == GLFW_RELEASE)
-            {
-                app->sPressed = false;
-            }
-            break;
-
-        case GLFW_KEY_D:
-            if (action == GLFW_PRESS)
-            {
-                app->dPressed = true;
-            }
-            else if (action == GLFW_RELEASE)
-            {
-                app->dPressed = false;
-            }
-            break;
-
-        default:
-            break;
-        }
     }
 
     static void handleMouseInput(GLFWwindow *window, double mouseX, double mouseY)
@@ -155,36 +106,27 @@ public:
 
             app->lastMouseX = mouseX;
             app->lastMouseY = mouseY;
+        }
+    }
 
+    static void handleMouseButton(GLFWwindow *window, int button, int action, int mods)
+    {
+        auto *app = reinterpret_cast<MyRenderPipeline *>(glfwGetWindowUserPointer(window));
+
+        if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
             app->isMouseActive = true;
+        } else if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE) {
+            app->isMouseActive = false;
         }
     }
 
     void update()
     {
-        auto deltaTime = 0.0001F;
-
-        if (this->wPressed)
-        {
-            m_camera->update(pvk::engine::FORWARD, deltaTime);
-        }
-        if (this->aPressed)
-        {
-            m_camera->update(pvk::engine::LEFT, deltaTime);
-        }
-        if (sPressed)
-        {
-            m_camera->update(pvk::engine::BACKWARD, deltaTime);
-        }
-        if (dPressed)
-        {
-            m_camera->update(pvk::engine::RIGHT, deltaTime);
-        }
-
         if (this->isMouseActive)
         {
-            m_camera->update(static_cast<float>(xOffset), static_cast<float>(yOffset));
-            this->isMouseActive = false;
+            m_camera->update(pvk::graphics::get()->getSwapChain().getSwapChainExtent(),
+                             static_cast<float>(xOffset),
+                             static_cast<float>(yOffset));
         }
         else
         {
@@ -193,7 +135,7 @@ public:
         }
 
         ubo.view = m_camera->getViewMatrix();
-        // m_bufferObject->update(&ubo);
+        m_bufferObject->update(&ubo);
     }
 
     void render(const pvk::command_buffer::CommandBuffer &commandBuffer) override
@@ -204,7 +146,7 @@ public:
 private:
     std::unique_ptr<pvk::engine::RenderStage> m_renderStage{};
     std::unique_ptr<pvk::geometry::Object> m_object{};
-    std::unique_ptr<pvk::engine::Camera> m_camera{};
+    std::unique_ptr<pvk::engine::CameraArc> m_camera{};
     std::unique_ptr<pvk::engine::UniformBuffer> m_bufferObject{};
 
     UniformBufferObject ubo{};

@@ -9,8 +9,8 @@ set(RENDER_STAGE_SOURCE_LIST render_stage/RenderStage.cpp render_stage/RenderSta
 set(SHADER_HEADER_LIST shader/Descriptor.hpp shader/UniformBuffer.hpp)
 set(SHADER_SOURCE_LIST shader/UniformBuffer.cpp)
 
-set(CAMERA_HEADER_LIST camera/Camera.hpp)
-set(CAMERA_SOURCE_LIST camera/Camera.cpp)
+set(CAMERA_HEADER_LIST camera/Camera.hpp camera/CameraArc.hpp)
+set(CAMERA_SOURCE_LIST camera/Camera.cpp camera/CameraArc.cpp)
 
 add_library(pvk_reloaded_engine ${SOURCE_LIST} ${HEADER_LIST}
     ${EXCEPTIONS_HEADER_LIST}
