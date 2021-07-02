@@ -17,14 +17,14 @@
 #include "LogWidget.hpp"
 #include "OverlayWidget.hpp"
 
-#include "../engine/render_stage/RenderStage.hpp"
+#include "../engine/render_stage/Shader.hpp"
 #include "../vulkan/CommandBuffer.hpp"
 
 namespace pvk::ui
 {
 constexpr uint32_t defaultDescriptorCount = 1000;
 
-class RenderStageUI : public engine::RenderStage
+class RenderStageUI : public engine::Shader
 {
 public:
     RenderStageUI(const vulkan::CommandPool &commandPool, const vulkan::RenderPass &renderPass);

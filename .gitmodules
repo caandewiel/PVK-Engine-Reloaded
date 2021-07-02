@@ -28,3 +28,6 @@
 [submodule "external/SPIRV-Cross"]
 	path = external/SPIRV-Cross
 	url = https://github.com/KhronosGroup/SPIRV-Cross.git
+[submodule "external/sanitizers-cmake"]
+	path = external/sanitizers-cmake
+	url = git://github.com/arsenm/sanitizers-cmake.git

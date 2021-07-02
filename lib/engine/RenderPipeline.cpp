@@ -10,6 +10,30 @@
 
 #include "Graphics.hpp"
 
+namespace
+{
+std::unique_ptr<pvk::vulkan::DescriptorPool> initializeDescriptorPool()
+{
+    // This workaround is adapted from:
+    // https://github.com/EQMG/Acid/blob/cb1e62a80cdba662a0b2c1ba008b2bf4a397877a/Sources/Graphics/Pipelines/Shader.cpp
+    constexpr uint32_t descriptorPoolMaxNumberOfSets = 8192;
+    constexpr uint32_t descriptorCountHigh = 4096;
+    constexpr uint32_t descriptorCountLow = 2048;
+
+    std::vector<vk::DescriptorPoolSize> descriptorPoolSizes = {
+        {vk::DescriptorType::eCombinedImageSampler, descriptorCountHigh},
+        {vk::DescriptorType::eUniformBuffer, descriptorCountLow},
+        {vk::DescriptorType::eStorageImage, descriptorCountLow},
+        {vk::DescriptorType::eUniformTexelBuffer, descriptorCountLow},
+        {vk::DescriptorType::eStorageTexelBuffer, descriptorCountLow},
+        {vk::DescriptorType::eStorageBuffer, descriptorCountLow},
+    };
+
+    return std::make_unique<pvk::vulkan::DescriptorPool>(
+        descriptorPoolSizes, vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet, descriptorPoolMaxNumberOfSets);
+}
+} // namespace
+
 namespace pvk::engine
 {
 RenderPipeline::RenderPipeline()
@@ -22,6 +46,7 @@ RenderPipeline::RenderPipeline()
     m_presentSemaphore = std::make_unique<pvk::vulkan::Semaphore>();
     m_renderSemaphore = std::make_unique<pvk::vulkan::Semaphore>();
     m_renderStageUI = std::make_unique<pvk::ui::RenderStageUI>(*m_commandPool, *m_renderPass);
+    m_descriptorPool = initializeDescriptorPool();
 }
 
 RenderPipeline::~RenderPipeline()
@@ -68,7 +93,14 @@ void RenderPipeline::render()
     this->presentGraphicsQueue(imageIndex);
 }
 
-void RenderPipeline::registerRenderStage(const std::string &identifier, std::unique_ptr<RenderStage> &&renderStage)
+void RenderPipeline::renderObject(const pvk::engine::Shader &renderStage,
+                                  const pvk::command_buffer::CommandBuffer &commandBuffer,
+                                  const pvk::geometry::Object &object)
+{
+    renderStage.renderObject(commandBuffer, object);
+}
+
+void RenderPipeline::registerRenderStage(const std::string &identifier, std::unique_ptr<Shader> &&renderStage)
 {
     m_renderStages.insert(std::make_pair(identifier, std::move(renderStage)));
 }
@@ -81,6 +113,11 @@ const vulkan::RenderPass &RenderPipeline::getRenderPass() const
 const vulkan::CommandPool &RenderPipeline::getCommandPool() const
 {
     return *m_commandPool;
+}
+
+const vulkan::DescriptorPool &RenderPipeline::getDescriptorPool() const
+{
+    return *m_descriptorPool;
 }
 
 const command_buffer::CommandBuffer &RenderPipeline::getCommandBuffer() const
@@ -163,5 +200,30 @@ void RenderPipeline::presentGraphicsQueue(uint32_t imageIndex)
 
     pvk::vulkan::assertVulkan(graphics::get()->getDevice().getGraphicsQueue().presentKHR(presentInfo),
                               "Could not present image to SwapChain.");
+}
+
+void RenderPipeline::setScene(std::weak_ptr<geometry::Scene> scene)
+{
+    m_scene = std::move(scene);
+}
+
+const geometry::Scene &RenderPipeline::getScene() const
+{
+    return *m_scene.lock();
+}
+
+void RenderPipeline::setCamera(std::weak_ptr<engine::Camera> camera)
+{
+    m_camera = std::move(camera);
+}
+
+const engine::Camera &RenderPipeline::getCamera() const
+{
+    return *m_camera.lock();
+}
+
+engine::Camera &RenderPipeline::getCamera()
+{
+    return *m_camera.lock();
 }
 } // namespace pvk::engine

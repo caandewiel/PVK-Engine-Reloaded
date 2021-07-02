@@ -15,7 +15,7 @@ void Engine::initialize()
     graphics::get()->initialize();
 }
 
-void Engine::run(const Application &application)
+void Engine::run(Application &application)
 {
     graphics::get()->render(application);
 }

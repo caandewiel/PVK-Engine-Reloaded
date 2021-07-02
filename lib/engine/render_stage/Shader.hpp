@@ -1,5 +1,5 @@
-#ifndef RENDERSTAGE_HPP
-#define RENDERSTAGE_HPP
+#ifndef ENGINE_SHADER_HPP
+#define ENGINE_SHADER_HPP
 
 #include <filesystem>
 #include <memory>
@@ -20,22 +20,20 @@
 
 namespace pvk::engine
 {
-class RenderStage
+class Shader
 {
 public:
-    RenderStage() = default;
-    RenderStage(std::unique_ptr<pvk::vulkan::Pipeline> &&pipeline,
-                std::unique_ptr<pvk::vulkan::DescriptorPool> &&descriptorPool,
+    Shader() = default;
+    Shader(std::unique_ptr<pvk::vulkan::Pipeline> &&pipeline,
                 absl::flat_hash_map<std::string, pipeline::DescriptorDefinition> &&descriptorDefinitions);
 
-    virtual ~RenderStage();
+    virtual ~Shader();
 
     void renderObject(const command_buffer::CommandBuffer &commandBuffer, const geometry::Object &object) const;
     void bindDescriptor(const std::string &identifier, const Descriptor &descriptor);
 
 protected:
     std::unique_ptr<vulkan::Pipeline> m_pipeline;
-    std::unique_ptr<vulkan::DescriptorPool> m_descriptorPool;
 
 private:
     absl::flat_hash_map<std::string, pipeline::DescriptorDefinition> m_descriptorDefinitions;
@@ -44,4 +42,4 @@ private:
 };
 } // namespace pvk::engine
 
-#endif // RENDERSTAGE_HPP
+#endif // ENGINE_SHADER_HPP

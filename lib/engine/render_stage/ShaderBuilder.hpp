@@ -5,25 +5,25 @@
 #include <memory>
 #include <vulkan/vulkan.hpp>
 
-#include "RenderStage.hpp"
+#include "Shader.hpp"
 
 #include "../../vulkan/DescriptorPool.hpp"
 #include "../../vulkan/RenderPass.hpp"
 
 namespace pvk::engine::pipeline
 {
-class RenderStageBuilder
+class ShaderBuilder
 {
 public:
-    [[nodiscard]] RenderStageBuilder &setVertexShader(const std::filesystem::path &vertexShader);
+    [[nodiscard]] ShaderBuilder &setVertexShader(const std::filesystem::path &vertexShader);
 
-    [[nodiscard]] RenderStageBuilder &setFragmentShader(const std::filesystem::path &fragmentShader);
+    [[nodiscard]] ShaderBuilder &setFragmentShader(const std::filesystem::path &fragmentShader);
 
-    [[nodiscard]] RenderStageBuilder &setRenderPass(const vulkan::RenderPass &renderPass);
+    [[nodiscard]] ShaderBuilder &setRenderPass(const vulkan::RenderPass &renderPass);
 
-    [[nodiscard]] RenderStageBuilder &setViewport(const vk::Extent2D &viewport);
+    [[nodiscard]] ShaderBuilder &setViewport(const vk::Extent2D &viewport);
 
-    [[nodiscard]] std::unique_ptr<pvk::engine::RenderStage> create();
+    [[nodiscard]] std::unique_ptr<pvk::engine::Shader> create();
 
 private:
     std::filesystem::path m_pathToVertexShader;

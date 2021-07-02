@@ -6,10 +6,10 @@
 #include <fstream>
 #include <iostream>
 #include <memory>
-#include <span>
 #include <streambuf>
 #include <utility>
 #include <vector>
+#include <span>
 
 #include <absl/container/flat_hash_map.h>
 
@@ -26,9 +26,11 @@
 
 #include "../lib/asset/AssetHelper.hpp"
 #include "../lib/asset/Blueprint.hpp"
+#include "../lib/asset/MaterialInfo.hpp"
 
 constexpr auto assimpFlags = aiProcess_OptimizeMeshes | aiProcess_GenNormals | aiProcess_FlipUVs;
 constexpr auto meshFlag = "MESH";
+// constexpr auto materialFlag = "MAT_";
 // constexpr auto textureFlag = "TEX ";
 
 struct Vertex
@@ -46,80 +48,6 @@ struct Object
 
 namespace
 {
-// void loadJson()
-// {
-//     {
-//         std::ifstream inputFile;
-//         inputFile.open(fmt::format("{}/{}.object", "/Users/christian", "walk/walk"), std::ios::binary);
-//         inputFile.seekg(0);
-
-//         uint32_t metadataSize = 0;
-//         inputFile.read(reinterpret_cast<char *>(&metadataSize), sizeof(uint32_t));
-
-//         std::string metadataContent;
-//         metadataContent.resize(metadataSize);
-//         inputFile.read(metadataContent.data(), metadataSize);
-
-//         auto metadata = nlohmann::json::parse(metadataContent.begin(), metadataContent.end());
-
-//         uint32_t matricesSize = 0;
-//         inputFile.read(reinterpret_cast<char *>(&matricesSize), sizeof(uint32_t));
-
-//         std::vector<char> matricesBinaryBlob;
-//         matricesBinaryBlob.resize(matricesSize);
-//         inputFile.read(matricesBinaryBlob.data(), matricesSize);
-
-//         auto blueprint = pvk::asset::Blueprint::parseJson(metadata);
-//         blueprint.matrices = pvk::binary::convertBinaryBlobToVector<glm::mat4>(std::move(matricesBinaryBlob));
-
-//         std::cout << metadata.dump() << std::endl;
-//     }
-
-//     std::ifstream inputFile;
-//     inputFile.open(fmt::format("{}/{}.mesh", "/Users/christian", "walk/Beta_Surface"), std::ios::binary);
-//     inputFile.seekg(0);
-
-//     std::string flags;
-//     flags.resize(4);
-//     inputFile.read(flags.data(), 4 * sizeof(char));
-
-//     std::cout << flags.c_str() << "\n";
-
-//     uint32_t metadataSize = 0;
-//     inputFile.read(reinterpret_cast<char *>(&metadataSize), sizeof(uint32_t));
-
-//     std::string metadataContent;
-//     metadataContent.resize(metadataSize);
-//     inputFile.read(metadataContent.data(), metadataSize);
-
-//     auto metadata = nlohmann::json::parse(metadataContent.begin(), metadataContent.end());
-
-//     const auto vertexSizeOriginal = metadata["vertexSizeOriginal"].get<uint32_t>();
-//     const auto indexSizeOriginal = metadata["indexSizeOriginal"].get<uint32_t>();
-//     const auto targetSize = vertexSizeOriginal + indexSizeOriginal;
-//     const auto compressedSize = metadata["compressedSize"].get<uint32_t>();
-
-//     std::string binaryBlob;
-//     binaryBlob.resize(targetSize);
-//     inputFile.read(binaryBlob.data(), compressedSize);
-
-//     std::string output;
-//     output.resize(targetSize);
-
-//     LZ4_decompress_safe(binaryBlob.data(), output.data(), compressedSize, targetSize);
-
-//     std::vector<char> vertexBuffer;
-//     std::vector<char> indexBuffer;
-//     vertexBuffer.resize(vertexSizeOriginal);
-//     indexBuffer.resize(indexSizeOriginal);
-//     memcpy(vertexBuffer.data(), output.data(), vertexSizeOriginal);
-//     memcpy(indexBuffer.data(), output.data() + vertexSizeOriginal, indexSizeOriginal);
-//     auto vertices = std::span(reinterpret_cast<Vertex *>(vertexBuffer.data()), vertexSizeOriginal / sizeof(Vertex));
-//     auto indices = std::span(reinterpret_cast<uint32_t *>(indexBuffer.data()), indexSizeOriginal / sizeof(uint32_t));
-
-//     std::cout << vertices[0].position.x << "\n";
-// }
-
 void loadMeshes(const aiScene *scene, const std::filesystem::path &destinationPath)
 {
     const auto meshes = std::span(scene->mMeshes, scene->mNumMeshes);
@@ -186,13 +114,39 @@ void loadMeshes(const aiScene *scene, const std::filesystem::path &destinationPa
 
         std::cout << "Written mesh to " << destinationPathMesh << "\n";
 
-        auto metadataSize = static_cast<uint32_t>(metadataContent.size());
+        const auto metadataSize = htonl(metadataContent.size());
         binaryFile.write(meshFlag, 4 * sizeof(char));
         binaryFile.write(reinterpret_cast<const char *>(&metadataSize), sizeof(uint32_t));
-        binaryFile.write(metadataContent.data(), metadataSize);
+        binaryFile.write(metadataContent.data(), metadataContent.size());
         binaryFile.write(binaryBlob.data(), binaryBlob.size());
 
         binaryFile.close();
+    }
+}
+
+void loadMaterials(const aiScene *scene,
+                   const std::shared_ptr<pvk::asset::Blueprint> &blueprint)
+{
+    std::vector<nlohmann::json> materialInfos;
+    const auto materials = std::span(scene->mMaterials, scene->mNumMaterials);
+    auto currentMaterialIndex = 0;
+
+    for (const auto &material : materials)
+    {
+        pvk::asset::MaterialInfo materialInfo{};
+        materialInfo.identifier = currentMaterialIndex;
+        materialInfo.name = material->GetName().C_Str();
+
+        const auto properties = std::span(material->mProperties, material->mNumProperties);
+
+        for (const auto &property : properties)
+        {
+            materialInfo.customData.insert(std::make_pair(property->mKey.C_Str(), property->mData));
+        }
+
+        blueprint->materials.emplace_back(std::move(materialInfo));
+
+        currentMaterialIndex++;
     }
 }
 
@@ -218,8 +172,12 @@ void loadNode(const aiScene *scene,
         }
     }
 
-    for (const auto &mesh : std::span(node->mMeshes, node->mNumMeshes)) {
+    const auto &meshes = std::span(scene->mMeshes, scene->mNumMeshes);
+
+    for (const auto &mesh : std::span(node->mMeshes, node->mNumMeshes))
+    {
         currentNode.meshIndices.emplace_back(mesh);
+        currentNode.materialIndices.emplace_back(meshes[mesh]->mMaterialIndex);
     }
 
     blueprint->nodes.emplace_back(std::move(currentNode));
@@ -235,24 +193,25 @@ void loadNodes(const aiScene *scene, const std::filesystem::path &destinationPat
 {
     auto blueprint = std::make_shared<pvk::asset::Blueprint>();
     loadNode(scene, scene->mRootNode, blueprint);
+    loadMaterials(scene, blueprint);
 
     const auto meshes = std::span(scene->mMeshes, scene->mNumMeshes);
-    for (const auto &mesh : meshes) {
+    for (const auto &mesh : meshes)
+    {
         blueprint->meshPaths.emplace_back(std::filesystem::path(mesh->mName.C_Str()).replace_extension(".mesh"));
     }
 
-    const auto jsonContent = blueprint->toJson().dump();
-    const uint32_t jsonContentSize = jsonContent.size();
+    const auto blueprintContent = nlohmann::json::to_msgpack(blueprint->toJson());
+    const auto blueprintContentSize = htonl(blueprintContent.size());
 
     const auto binaryBlobMatrices = pvk::asset::convertVectorToBinary(std::move(blueprint->matrices));
-    const uint32_t binaryBlobMatricesSize = binaryBlobMatrices.size();
+    const auto binaryBlobMatricesSize = htonl(binaryBlobMatrices.size());
 
     const auto destinationPathBlueprint = (destinationPath / stem).replace_extension("object");
 
-    std::ofstream binaryFile;
-    binaryFile.open(destinationPathBlueprint);
-    binaryFile.write(reinterpret_cast<const char *>(&jsonContentSize), sizeof(uint32_t));
-    binaryFile.write(jsonContent.data(), jsonContent.size());
+    std::ofstream binaryFile(destinationPathBlueprint, std::ios::out | std::ios::binary);
+    binaryFile.write(reinterpret_cast<const char *>(&blueprintContentSize), sizeof(uint32_t));
+    binaryFile.write(reinterpret_cast<const char *>(blueprintContent.data()), blueprintContent.size());
     binaryFile.write(reinterpret_cast<const char *>(&binaryBlobMatricesSize), sizeof(uint32_t));
     binaryFile.write(binaryBlobMatrices.data(), binaryBlobMatrices.size());
     binaryFile.close();
@@ -263,14 +222,15 @@ void loadNodes(const aiScene *scene, const std::filesystem::path &destinationPat
 
 int main(int argc, char *argv[])
 {
-    if (argc < 2) {
-        std::cout << "No path to asset was provided.\n";
+    // if (argc < 2)
+    // {
+    //     std::cout << "No path to asset was provided.\n";
 
-        return -1;
-    }
+    //     return -1;
+    // }
 
-    std::filesystem::path filePath{argv[1]};
-// std::filesystem::path filePath{"/Users/christian/walk.glb"};
+    // std::filesystem::path filePath{argv[1]};
+    std::filesystem::path filePath{"/Users/christian/walk.glb"};
 
     std::cout << fmt::format("Loading file {}", filePath.string()) << "\n";
 

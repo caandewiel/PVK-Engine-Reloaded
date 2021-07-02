@@ -1,4 +1,4 @@
-#include "RenderStage.hpp"
+#include "Shader.hpp"
 
 #include <memory>
 #include <utility>
@@ -10,30 +10,32 @@
 
 namespace pvk::engine
 {
-RenderStage::RenderStage(std::unique_ptr<pvk::vulkan::Pipeline> &&pipeline,
-                         std::unique_ptr<pvk::vulkan::DescriptorPool> &&descriptorPool,
-                         absl::flat_hash_map<std::string, pipeline::DescriptorDefinition> &&descriptorDefinitions)
-    : m_pipeline(std::move(pipeline)), m_descriptorPool(std::move(descriptorPool)),
-      m_descriptorDefinitions(std::move(descriptorDefinitions))
+Shader::Shader(std::unique_ptr<pvk::vulkan::Pipeline> &&pipeline,
+               absl::flat_hash_map<std::string, pipeline::DescriptorDefinition> &&descriptorDefinitions)
+    : m_pipeline(std::move(pipeline)), m_descriptorDefinitions(std::move(descriptorDefinitions))
 {
 }
 
-RenderStage::~RenderStage()
+Shader::~Shader()
 {
-    m_descriptorPool.reset();
     m_pipeline.reset();
 }
 
-void RenderStage::renderObject(const command_buffer::CommandBuffer &commandBuffer, const geometry::Object &object) const
+void Shader::renderObject(const command_buffer::CommandBuffer &commandBuffer, const geometry::Object &object) const
 {
     const auto &cb = commandBuffer.getCommandBuffer(0);
     cb.bindPipeline(vk::PipelineBindPoint::eGraphics, m_pipeline->getPipeline());
-    cb.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, m_pipeline->getPipelineLayout(), 0, 1, &m_descriptorSets.at(0), 0, nullptr);
-    cb.pushConstants(m_pipeline->getPipelineLayout(), vk::ShaderStageFlagBits::eAllGraphics, 0, sizeof(glm::mat4), &object.getRootNode().getMatrix());
+    cb.bindDescriptorSets(
+        vk::PipelineBindPoint::eGraphics, m_pipeline->getPipelineLayout(), 0, 1, &m_descriptorSets.at(0), 0, nullptr);
+    cb.pushConstants(m_pipeline->getPipelineLayout(),
+                     vk::ShaderStageFlagBits::eAllGraphics,
+                     0,
+                     sizeof(glm::mat4),
+                     &object.getRootNode().getMatrix());
     object.draw(commandBuffer);
 }
 
-void RenderStage::bindDescriptor(const std::string &identifier, const Descriptor &descriptor)
+void Shader::bindDescriptor(const std::string &identifier, const Descriptor &descriptor)
 {
     try
     {
@@ -41,10 +43,12 @@ void RenderStage::bindDescriptor(const std::string &identifier, const Descriptor
 
         auto descriptorDefinition = m_descriptorDefinitions.at(identifier);
         auto descriptorSetLayout = m_pipeline->getDescriptorSetLayout(descriptorDefinition.descriptorSetIndex);
-        std::vector<vk::DescriptorSetLayout> layouts(Context::getNumberOfSwapChainImages(), descriptorSetLayout);
+        std::vector<vk::DescriptorSetLayout> layouts(pvk::graphics::get()->getSwapChain().getNumberOfSwapChainImages(),
+                                                     descriptorSetLayout);
 
         vk::DescriptorSetAllocateInfo descriptorSetAllocateInfo;
-        descriptorSetAllocateInfo.setDescriptorPool(m_descriptorPool->getDescriptorPool());
+        descriptorSetAllocateInfo.setDescriptorPool(
+            pvk::graphics::get()->getRenderPipeline().getDescriptorPool().getDescriptorPool());
         descriptorSetAllocateInfo.setSetLayouts(descriptorSetLayout);
         descriptorSetAllocateInfo.setDescriptorSetCount(1);
 

@@ -59,7 +59,7 @@ void Graphics::draw() const
     m_renderPipeline->render();
 }
 
-void Graphics::render(const Application &application) const
+void Graphics::render(Application &application) const
 {
     while (glfwWindowShouldClose(m_window->getWindow()) == 0)
     {
@@ -139,6 +139,16 @@ const vulkan::MemoryAllocator &Graphics::getMemoryAllocator() const
     }
 
     return *m_memoryAllocator;
+}
+
+const engine::RenderPipeline& Graphics::getRenderPipeline() const
+{
+    if (m_renderPipeline == nullptr)
+    {
+        throw PvkExceptionGraphics("Render pipeline has not yet been initialized.");
+    }
+
+    return *m_renderPipeline;
 }
 
 void Graphics::setRenderPipeline(std::unique_ptr<engine::RenderPipeline> &&renderPipeline)

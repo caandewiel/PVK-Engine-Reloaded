@@ -8,6 +8,7 @@
 #include <vector>
 
 #include "../engine/exceptions/PvkExceptionAsset.hpp"
+#include "glm/fwd.hpp"
 
 namespace pvk::geometry
 {
@@ -26,12 +27,12 @@ bool Node::hasMesh() const
     return !m_meshes.empty();
 }
 
-const std::string& Node::getName() const
+const std::string &Node::getName() const
 {
     return m_name;
 }
 
-const std::vector<std::weak_ptr<Node>>& Node::getChildren() const
+const std::vector<std::weak_ptr<Node>> &Node::getChildren() const
 {
     return m_children;
 }
@@ -46,7 +47,7 @@ const Node &Node::getParent() const
     return *m_parent.lock();
 }
 
-Node& Node::getParent() 
+Node &Node::getParent()
 {
     return *m_parent.lock();
 }
@@ -71,18 +72,20 @@ void Node::setParent(std::weak_ptr<Node> parent)
     m_parent = std::move(parent);
 }
 
-void Node::addChild(std::weak_ptr<Node> child) 
+void Node::addChild(std::weak_ptr<Node> child)
 {
     m_children.push_back(std::move(child));
 }
 
-void Node::draw(const pvk::command_buffer::CommandBuffer &commandBuffer) const 
+void Node::draw(const pvk::command_buffer::CommandBuffer &commandBuffer) const
 {
-    for (const auto &mesh : m_meshes) {
+    for (const auto &mesh : m_meshes)
+    {
         mesh.lock()->draw(commandBuffer);
     }
 
-    for (const auto &child : m_children) {
+    for (const auto &child : m_children)
+    {
         child.lock()->draw(commandBuffer);
     }
 }

@@ -4,6 +4,8 @@
 #include <glm/glm.hpp>
 #include "glm/fwd.hpp"
 
+#include <vulkan/vulkan.hpp>
+
 namespace pvk::engine
 {
 enum CameraMovement
@@ -25,18 +27,12 @@ constexpr float cameraPitchLimit = 89.0F;
 class Camera
 {
 public:
-    Camera(glm::vec3 position, glm::vec3 up, float yaw = defaultYaw, float pitch = defaultPitch);
-    void update(CameraMovement direction, float deltaTime);
-    void update(float xOffset, float yOffset);
-    [[nodiscard]] glm::mat4 getViewMatrix() const;
-    [[nodiscard]] glm::vec3 getPosition() const;
+    Camera() = default;
+    virtual void update(const vk::Extent2D &viewport, float deltaX, float deltaY) = 0;
+    [[nodiscard]] virtual glm::mat4 getViewMatrix() const = 0;
+    [[nodiscard]] virtual glm::vec3 getPosition() const = 0;
 
 private:
-    glm::vec3 m_position, m_front, m_up {}, m_right {}, m_worldUp;
-    float m_yaw, m_pitch;
-    float m_movementSpeed, m_sensitivity;
-
-    void calculateCameraVectors();
 };
 
 } // namespace pvk::engine

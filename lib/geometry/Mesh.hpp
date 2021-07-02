@@ -3,14 +3,14 @@
 
 #include <filesystem>
 #include <memory>
+#include <utility>
 #include <vector>
 
-#include "Vertex.hpp"
 #include "Drawable.hpp"
+#include "Material.hpp"
+#include "Vertex.hpp"
 
 #include "../vulkan/Buffer.hpp"
-#include "glm/ext/vector_float3.hpp"
-#include "glm/fwd.hpp"
 
 namespace pvk::geometry
 {
@@ -18,6 +18,11 @@ class Mesh : public Drawable
 {
 public:
     explicit Mesh(const std::filesystem::path &path);
+    Mesh(std::unique_ptr<vulkan::Buffer> &&vertexBuffer,
+         std::unique_ptr<vulkan::Buffer> &&indexBuffer,
+         size_t numberOfVertices,
+         size_t numberOfIndices,
+         std::pair<glm::vec3, glm::vec3> bounds);
 
     [[nodiscard]] const vulkan::Buffer &getVertexBuffer() const;
     [[nodiscard]] const vulkan::Buffer &getIndexBuffer() const;
@@ -41,11 +46,17 @@ public:
 
     [[nodiscard]] std::pair<glm::vec3, glm::vec3> getBounds() const;
 
+    [[nodiscard]] const geometry::Material &getMaterial() const;
+    void setMaterial(std::weak_ptr<geometry::Material> material);
+
 private:
-    uint32_t m_numVertices;
     std::unique_ptr<vulkan::Buffer> m_vertexBuffer;
-    uint32_t m_numIndices;
     std::unique_ptr<vulkan::Buffer> m_indexBuffer;
+
+    std::weak_ptr<geometry::Material> m_material;
+
+    uint32_t m_numVertices;
+    uint32_t m_numIndices;
 
     glm::vec3 m_minBounds;
     glm::vec3 m_maxBounds;

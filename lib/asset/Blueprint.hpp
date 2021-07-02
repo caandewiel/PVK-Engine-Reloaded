@@ -4,13 +4,15 @@
 #include <filesystem>
 #include <string>
 #include <unordered_map>
+#include <vector>
 
 #include <absl/container/flat_hash_map.h>
 
 #include <glm/glm.hpp>
 
 #include <json.hpp>
-#include <vector>
+
+#include "MaterialInfo.hpp"
 
 namespace pvk::asset
 {
@@ -27,6 +29,7 @@ struct NodeInfo
     int32_t parent; // -1 when no parent
     std::vector<uint32_t> children;
     std::vector<uint32_t> meshIndices;
+    std::vector<uint32_t> materialIndices;
 };
 
 struct Blueprint
@@ -36,6 +39,7 @@ struct Blueprint
     static Blueprint parseJson(const nlohmann::json &json);
 
     std::vector<NodeInfo> nodes;
+    std::vector<MaterialInfo> materials;
     std::vector<glm::mat4> matrices;
     std::vector<std::filesystem::path> meshPaths;
 };

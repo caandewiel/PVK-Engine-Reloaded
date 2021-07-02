@@ -64,6 +64,18 @@ Mesh::Mesh(const std::filesystem::path &path)
         std::move(indices), vk::BufferUsageFlagBits::eIndexBuffer, VMA_MEMORY_USAGE_CPU_TO_GPU);
 }
 
+Mesh::Mesh(std::unique_ptr<vulkan::Buffer> &&vertexBuffer,
+           std::unique_ptr<vulkan::Buffer> &&indexBuffer,
+           size_t numberOfVertices,
+           size_t numberOfIndices,
+           std::pair<glm::vec3, glm::vec3> bounds)
+    : m_vertexBuffer(std::move(vertexBuffer)), m_indexBuffer(std::move(indexBuffer)), m_numVertices(numberOfVertices),
+      m_numIndices(numberOfIndices)
+{
+    m_minBounds = bounds.first;
+    m_maxBounds = bounds.second;
+}
+
 const vulkan::Buffer &Mesh::getVertexBuffer() const
 {
     return *m_vertexBuffer;
@@ -87,5 +99,15 @@ void Mesh::draw(const pvk::command_buffer::CommandBuffer &commandBuffer) const
 std::pair<glm::vec3, glm::vec3> Mesh::getBounds() const
 {
     return std::make_pair(m_minBounds, m_maxBounds);
+}
+
+void Mesh::setMaterial(std::weak_ptr<geometry::Material> material)
+{
+    m_material = std::move(material);
+}
+
+const geometry::Material &Mesh::getMaterial() const
+{
+    return *m_material.lock();
 }
 } // namespace pvk::geometry

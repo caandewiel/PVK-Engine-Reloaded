@@ -18,33 +18,42 @@ namespace
 std::pair<glm::vec3, glm::vec3> calculateBounds(
     const absl::flat_hash_map<uint32_t, std::shared_ptr<pvk::geometry::Mesh>> &meshLookup)
 {
-    glm::vec3 minBounds = { std::numeric_limits<float>::max(), std::numeric_limits<float>::max(), std::numeric_limits<float>::max() };
-    glm::vec3 maxBounds = { std::numeric_limits<float>::min(), std::numeric_limits<float>::min(), std::numeric_limits<float>::min() };
+    glm::vec3 minBounds = {
+        std::numeric_limits<float>::max(), std::numeric_limits<float>::max(), std::numeric_limits<float>::max()};
+    glm::vec3 maxBounds = {
+        std::numeric_limits<float>::min(), std::numeric_limits<float>::min(), std::numeric_limits<float>::min()};
 
-    for (const auto &[_, mesh] : meshLookup) {
+    for (const auto &[_, mesh] : meshLookup)
+    {
         auto currentBounds = mesh->getBounds();
 
-        if (minBounds.x > currentBounds.first.x) {
+        if (minBounds.x > currentBounds.first.x)
+        {
             minBounds.x = currentBounds.first.x;
         }
 
-        if (minBounds.y > currentBounds.first.y) {
+        if (minBounds.y > currentBounds.first.y)
+        {
             minBounds.y = currentBounds.first.y;
         }
 
-        if (minBounds.z > currentBounds.first.z) {
+        if (minBounds.z > currentBounds.first.z)
+        {
             minBounds.z = currentBounds.first.z;
         }
 
-        if (maxBounds.x < currentBounds.second.x) {
+        if (maxBounds.x < currentBounds.second.x)
+        {
             maxBounds.x = currentBounds.second.x;
         }
 
-        if (maxBounds.y < currentBounds.second.y) {
+        if (maxBounds.y < currentBounds.second.y)
+        {
             maxBounds.y = currentBounds.second.y;
         }
 
-        if (maxBounds.z < currentBounds.second.z) {
+        if (maxBounds.z < currentBounds.second.z)
+        {
             maxBounds.z = currentBounds.second.z;
         }
     }
@@ -56,8 +65,10 @@ std::pair<glm::vec3, glm::vec3> calculateBounds(
 namespace pvk::geometry
 {
 Object::Object(absl::flat_hash_map<uint32_t, std::shared_ptr<Mesh>> &&meshLookup,
-               absl::flat_hash_map<uint32_t, std::shared_ptr<Node>> &&nodeLookup)
-    : m_meshLookup(std::move(meshLookup)), m_nodeLookup(std::move(nodeLookup))
+               absl::flat_hash_map<uint32_t, std::shared_ptr<Node>> &&nodeLookup,
+               absl::flat_hash_map<uint32_t, std::shared_ptr<Material>> &&materialLookup)
+    : m_meshLookup(std::move(meshLookup)), m_nodeLookup(std::move(nodeLookup)),
+      m_materialLookup(std::move(materialLookup))
 {
     auto bounds = calculateBounds(m_meshLookup);
     m_minBounds = bounds.first;

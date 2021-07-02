@@ -1,6 +1,7 @@
 #include "AssetHelper.hpp"
 
 #include <lz4.h>
+#include "json.hpp"
 
 namespace pvk::asset
 {
@@ -11,6 +12,15 @@ nlohmann::json readJsonFromInputFileStream(std::ifstream &stream, size_t size)
     stream.read(content.data(), size);
 
     return nlohmann::json::parse(content.begin(), content.end());
+}
+
+nlohmann::json readMessagePackFromInputFileStream(std::ifstream &stream, size_t size) 
+{
+    std::vector<uint8_t> content;
+    content.resize(size);
+    stream.read(reinterpret_cast<char *>(content.data()), size);
+
+    return nlohmann::json::from_msgpack(content);
 }
 
 std::vector<char> compress(std::vector<char> &&uncompressedData)

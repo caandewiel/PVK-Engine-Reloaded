@@ -4,6 +4,7 @@
 #include <cstddef>
 #include <fstream>
 #include <stdexcept>
+#include <type_traits>
 #include <vector>
 #include <memory>
 
@@ -49,6 +50,10 @@ template <typename T> T readFromInputFileStream(std::ifstream &stream)
 
     stream.read(reinterpret_cast<char *>(&result), sizeof(T));
 
+    if constexpr (std::is_same_v<T, uint32_t>) {
+        result = ntohl(result);
+    }
+
     return result;
 }
 
@@ -68,6 +73,8 @@ template <typename T> T readFromInputFileStream(std::ifstream &stream, size_t si
 }
 
 nlohmann::json readJsonFromInputFileStream(std::ifstream &stream, size_t size);
+
+nlohmann::json readMessagePackFromInputFileStream(std::ifstream &stream, size_t size);
 
 std::vector<char> compress(std::vector<char> &&uncompressedData);
 

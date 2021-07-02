@@ -13,7 +13,7 @@ class Engine
 {
 public:
     static void initialize();
-    static void run(const Application &application);
+    static void run(Application &application);
     static void tearDown();
 };
 } // namespace pvk::engine

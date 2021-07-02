@@ -40,7 +40,7 @@ public:
     static Graphics *_get();
 
     void initialize();
-    void render(const Application &application) const;
+    void render(Application &application) const;
     void destroy();
 
     [[nodiscard]] const vulkan::Window &getWindow() const;
@@ -49,11 +49,7 @@ public:
     [[nodiscard]] const vulkan::Surface &getSurface() const;
     [[nodiscard]] const vulkan::SwapChain &getSwapChain() const;
     [[nodiscard]] const vulkan::MemoryAllocator &getMemoryAllocator() const;
-
-    template<typename T>
-    [[nodiscard]] const engine::RenderPipeline &getRenderPipeline() const {
-        return dynamic_cast<const T &>(*m_renderPipeline);
-    };
+    [[nodiscard]] const engine::RenderPipeline &getRenderPipeline() const;
 
     template<typename T>
     [[nodiscard]] T &getRenderPipeline() {

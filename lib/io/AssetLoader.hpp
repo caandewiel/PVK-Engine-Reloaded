@@ -11,7 +11,7 @@
 namespace pvk::io
 {
 std::pair<std::vector<geometry::Vertex>, std::vector<uint32_t>> loadMeshBuffers(const std::filesystem::path &path);
-std::unique_ptr<geometry::Object> loadObject(const std::filesystem::path &path);
+std::shared_ptr<geometry::Object> loadObject(const std::filesystem::path &path);
 }
 
 #endif // __ASSETLOADER_H__

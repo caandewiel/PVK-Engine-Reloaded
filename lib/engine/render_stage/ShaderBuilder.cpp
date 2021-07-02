@@ -1,4 +1,4 @@
-#include "RenderStageBuilder.hpp"
+#include "ShaderBuilder.hpp"
 
 #include <memory>
 #include <vulkan/vulkan.hpp>
@@ -162,60 +162,39 @@ vk::PipelineLayout initializePipelineLayout(const pvk::engine::pipeline::Pipelin
 
     return device.createPipelineLayout(pipelineLayoutCreateInfo);
 }
-
-std::unique_ptr<pvk::vulkan::DescriptorPool> initializeDescriptorPool()
-{
-    // This workaround is adapted from:
-    // https://github.com/EQMG/Acid/blob/cb1e62a80cdba662a0b2c1ba008b2bf4a397877a/Sources/Graphics/Pipelines/Shader.cpp
-    constexpr uint32_t descriptorPoolMaxNumberOfSets = 8192;
-    constexpr uint32_t descriptorCountHigh = 4096;
-    constexpr uint32_t descriptorCountLow = 2048;
-
-    std::vector<vk::DescriptorPoolSize> descriptorPoolSizes = {
-        {vk::DescriptorType::eCombinedImageSampler, descriptorCountHigh},
-        {vk::DescriptorType::eUniformBuffer, descriptorCountLow},
-        {vk::DescriptorType::eStorageImage, descriptorCountLow},
-        {vk::DescriptorType::eUniformTexelBuffer, descriptorCountLow},
-        {vk::DescriptorType::eStorageTexelBuffer, descriptorCountLow},
-        {vk::DescriptorType::eStorageBuffer, descriptorCountLow},
-    };
-
-    return std::make_unique<pvk::vulkan::DescriptorPool>(
-        descriptorPoolSizes, vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet, descriptorPoolMaxNumberOfSets);
-}
 } // namespace
 
 namespace pvk::engine::pipeline
 {
-RenderStageBuilder &RenderStageBuilder::setVertexShader(const std::filesystem::path &vertexShader)
+ShaderBuilder &ShaderBuilder::setVertexShader(const std::filesystem::path &vertexShader)
 {
     this->m_pathToVertexShader = vertexShader;
 
     return *this;
 }
 
-RenderStageBuilder &RenderStageBuilder::setFragmentShader(const std::filesystem::path &fragmentShader)
+ShaderBuilder &ShaderBuilder::setFragmentShader(const std::filesystem::path &fragmentShader)
 {
     this->m_pathToFragmentShader = fragmentShader;
 
     return *this;
 }
 
-RenderStageBuilder &RenderStageBuilder::setRenderPass(const vulkan::RenderPass &renderPass)
+ShaderBuilder &ShaderBuilder::setRenderPass(const vulkan::RenderPass &renderPass)
 {
     this->m_renderPass = &renderPass;
 
     return *this;
 }
 
-RenderStageBuilder &RenderStageBuilder::setViewport(const vk::Extent2D &viewport)
+ShaderBuilder &ShaderBuilder::setViewport(const vk::Extent2D &viewport)
 {
     this->m_viewport = viewport;
 
     return *this;
 }
 
-std::unique_ptr<pvk::engine::RenderStage> RenderStageBuilder::create()
+std::unique_ptr<pvk::engine::Shader> ShaderBuilder::create()
 {
     const auto &device = graphics::get()->getDevice();
     const auto &swapChain = graphics::get()->getSwapChain();
@@ -282,10 +261,9 @@ std::unique_ptr<pvk::engine::RenderStage> RenderStageBuilder::create()
         shaderModules.emplace_back(vertexShaderModule);
         shaderModules.emplace_back(fragmentShaderModule);
 
-        return std::make_unique<pvk::engine::RenderStage>(
+        return std::make_unique<pvk::engine::Shader>(
             std::make_unique<pvk::vulkan::Pipeline>(
                 vulkanPipeline.value, pipelineLayout, std::move(shaderModules), std::move(descriptorSetLayouts)),
-            initializeDescriptorPool(),
             std::move(pipelineDefinition.descriptorDefinitions));
     }
 

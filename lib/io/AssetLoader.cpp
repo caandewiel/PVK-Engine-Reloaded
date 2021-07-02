@@ -5,10 +5,10 @@
 #include <fstream>
 #include <iostream>
 #include <memory>
-#include <span>
 #include <type_traits>
 #include <utility>
 #include <vector>
+#include <span>
 
 #include <absl/container/flat_hash_map.h>
 
@@ -16,15 +16,21 @@
 
 #include <json.hpp>
 
+#include "io.hpp"
+
 #include "../asset/AssetHelper.hpp"
 #include "../asset/Blueprint.hpp"
+#include "../engine/Graphics.hpp"
+#include "../geometry/Material.hpp"
 #include "../geometry/Mesh.hpp"
+#include "../vulkan/Helper.hpp"
 
 namespace
 {
 absl::flat_hash_map<uint32_t, std::shared_ptr<pvk::geometry::Node>> getNodeLookup(
     pvk::asset::Blueprint &blueprint,
-    const absl::flat_hash_map<uint32_t, std::shared_ptr<pvk::geometry::Mesh>> &meshLookup)
+    const absl::flat_hash_map<uint32_t, std::shared_ptr<pvk::geometry::Mesh>> &meshLookup,
+    const absl::flat_hash_map<uint32_t, std::shared_ptr<pvk::geometry::Material>> &materialLookup)
 {
     absl::flat_hash_map<uint32_t, std::shared_ptr<pvk::geometry::Node>> nodeLookup{};
 
@@ -32,12 +38,17 @@ absl::flat_hash_map<uint32_t, std::shared_ptr<pvk::geometry::Node>> getNodeLooku
     {
         std::vector<std::weak_ptr<pvk::geometry::Mesh>> meshes{};
 
-        for (auto meshIndex : node.meshIndices) {
+        for (size_t i = 0; i < node.meshIndices.size(); i++)
+        {
+            const auto meshIndex = node.meshIndices[i];
+            const auto materialIndex = node.materialIndices[i];
+
+            meshLookup.at(meshIndex)->setMaterial(materialLookup.at(materialIndex));
             meshes.emplace_back(meshLookup.at(meshIndex));
         }
 
-        auto currentNode =
-            std::make_shared<pvk::geometry::Node>(std::move(node.name), blueprint.matrices[node.identifier], std::move(meshes));
+        auto currentNode = std::make_shared<pvk::geometry::Node>(
+            std::move(node.name), blueprint.matrices[node.identifier], std::move(meshes));
 
         if (node.parent > -1)
         {
@@ -58,6 +69,27 @@ absl::flat_hash_map<uint32_t, std::shared_ptr<pvk::geometry::Node>> getNodeLooku
     return nodeLookup;
 }
 
+std::pair<glm::vec3, glm::vec3> calculateBounds(const std::vector<pvk::geometry::Vertex> &vertices)
+{
+    const auto x = std::minmax_element(
+        vertices.begin(), vertices.end(), [](const pvk::geometry::Vertex &a, const pvk::geometry::Vertex &b) {
+            return a.position.x < b.position.x;
+        });
+
+    const auto y = std::minmax_element(
+        vertices.begin(), vertices.end(), [](const pvk::geometry::Vertex &a, const pvk::geometry::Vertex &b) {
+            return a.position.y < b.position.y;
+        });
+
+    const auto z = std::minmax_element(
+        vertices.begin(), vertices.end(), [](const pvk::geometry::Vertex &a, const pvk::geometry::Vertex &b) {
+            return a.position.z < b.position.z;
+        });
+
+    return std::make_pair(glm::vec3(x.first->position.x, y.first->position.y, z.first->position.z),
+                          glm::vec3(x.second->position.x, y.second->position.y, z.second->position.z));
+}
+
 absl::flat_hash_map<uint32_t, std::shared_ptr<pvk::geometry::Mesh>> getMeshLookup(pvk::asset::Blueprint &blueprint,
                                                                                   const std::filesystem::path &path)
 {
@@ -65,34 +97,61 @@ absl::flat_hash_map<uint32_t, std::shared_ptr<pvk::geometry::Mesh>> getMeshLooku
 
     for (size_t i = 0; i < blueprint.meshPaths.size(); i++)
     {
-        auto mesh = std::make_shared<pvk::geometry::Mesh>(path.parent_path() / blueprint.meshPaths[i]);
+        auto [vertices, indices] = pvk::io::loadMeshBuffers(path.parent_path() / blueprint.meshPaths[i]);
+        const auto numVertices = vertices.size();
+        const auto numIndices = indices.size();
+
+        auto vertexBuffer = pvk::vulkan::createBuffer(
+            std::move(vertices), vk::BufferUsageFlagBits::eVertexBuffer, VMA_MEMORY_USAGE_CPU_TO_GPU);
+        auto indexBuffer = pvk::vulkan::createBuffer(
+            std::move(indices), vk::BufferUsageFlagBits::eIndexBuffer, VMA_MEMORY_USAGE_CPU_TO_GPU);
+
+        auto mesh = std::make_shared<pvk::geometry::Mesh>(
+            std::move(vertexBuffer), std::move(indexBuffer), numVertices, numIndices, calculateBounds(vertices));
+
         meshLookup.insert(std::make_pair(i, std::move(mesh)));
     }
 
     return meshLookup;
 }
+
+absl::flat_hash_map<uint32_t, std::shared_ptr<pvk::geometry::Material>> getMaterialLookup(
+    pvk::asset::Blueprint &blueprint)
+{
+    absl::flat_hash_map<uint32_t, std::shared_ptr<pvk::geometry::Material>> materialLookup{};
+
+    for (auto &material : blueprint.materials)
+    {
+        materialLookup.insert(std::make_pair(
+            material.identifier,
+            std::make_shared<pvk::geometry::Material>(std::move(material.name), std::move(material.customData))));
+    }
+
+    return materialLookup;
+}
 } // namespace
 
 namespace pvk::io
 {
-std::unique_ptr<geometry::Object> loadObject(const std::filesystem::path &path)
+std::shared_ptr<geometry::Object> loadObject(const std::filesystem::path &path)
 {
     std::ifstream inputFile;
     inputFile.open(path, std::ios::binary);
     inputFile.seekg(0);
 
     const auto metadataSize = pvk::asset::readFromInputFileStream<uint32_t>(inputFile);
-    const auto blueprintJson = pvk::asset::readJsonFromInputFileStream(inputFile, metadataSize);
+    const auto blueprintJson = pvk::asset::readMessagePackFromInputFileStream(inputFile, metadataSize);
     const auto matricesSize = pvk::asset::readFromInputFileStream<uint32_t>(inputFile);
 
     auto blueprint = pvk::asset::Blueprint::parseJson(blueprintJson);
     blueprint.matrices = pvk::asset::convertBinaryToVector<glm::mat4>(
         pvk::asset::readFromInputFileStream<std::vector<char>>(inputFile, matricesSize));
-    
-    auto meshLookup = getMeshLookup(blueprint, path);
-    auto nodeLookup = getNodeLookup(blueprint, meshLookup);
 
-    return std::make_unique<geometry::Object>(std::move(meshLookup), std::move(nodeLookup));
+    auto materialLookup = getMaterialLookup(blueprint);
+    auto meshLookup = getMeshLookup(blueprint, path);
+    auto nodeLookup = getNodeLookup(blueprint, meshLookup, materialLookup);
+
+    return std::make_unique<geometry::Object>(std::move(meshLookup), std::move(nodeLookup), std::move(materialLookup));
 }
 
 std::pair<std::vector<geometry::Vertex>, std::vector<uint32_t>> loadMeshBuffers(const std::filesystem::path &path)

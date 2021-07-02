@@ -5,9 +5,11 @@
 
 #include <vulkan/vulkan.hpp>
 
+#include "Camera.hpp"
+
 namespace pvk::engine
 {
-class CameraArc
+class CameraArc : public Camera
 {
 public:
     CameraArc(glm::vec3 position, glm::vec3 lookAt, glm::vec3 up);
