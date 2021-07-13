@@ -27,6 +27,11 @@ bool Node::hasMesh() const
     return !m_meshes.empty();
 }
 
+bool Node::hasChildren() const
+{
+    return !m_children.empty();
+}
+
 const std::string &Node::getName() const
 {
     return m_name;
@@ -54,11 +59,6 @@ Node &Node::getParent()
 
 const std::vector<std::weak_ptr<Mesh>> &Node::getMeshes() const
 {
-    if (!hasMesh())
-    {
-        throw PvkExceptionAsset("Trying to get mesh indices from node which has no meshes.");
-    }
-
     return m_meshes;
 }
 

@@ -1,13 +1,21 @@
 #version 450
 
-//shader input
-layout (location = 0) in vec3 inColor;
-layout (location = 1) in vec3 inNormal;
+// shader input
+layout(location = 0) in vec3 inNormal;
+layout(location = 1) in vec2 inUV;
 
-//output write
-layout (location = 0) out vec4 outFragColor;
-
-void main() 
+layout(set = 1, binding = 0) uniform Material
 {
-	outFragColor = vec4(inNormal, 1.0f);
+    vec3 color;
+}
+material;
+
+layout(set = 2, binding = 0) uniform sampler2D texSampler;
+
+// output write
+layout(location = 0) out vec4 outFragColor;
+
+void main()
+{
+    outFragColor = texture(texSampler, inUV);
 }

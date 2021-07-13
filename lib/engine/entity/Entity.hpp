@@ -21,19 +21,18 @@ public:
     [[nodiscard]] const glm::vec3 &getPosition() const;
     [[nodiscard]] const glm::vec3 &getScale() const;
     [[nodiscard]] const glm::vec3 &getRotation() const;
+    [[nodiscard]] const glm::mat4 &getTransformMatrix() const;
 
 private:
+    void updateTransformMatrix();
+
     struct
     {
         glm::vec3 m_position;
         glm::vec3 m_scale;
         glm::vec3 m_rotation;
+        glm::mat4 m_transformation;
     } m_transform;
-
-    std::unique_ptr<UniformBuffer> m_uniformBuffer;
-
-    void initializeUniformBuffer();
-    void updateUniformBuffer();
 };
 
 class Entity
@@ -43,6 +42,7 @@ public:
     Entity(std::shared_ptr<geometry::Object> object, Transform transform);
 
     [[nodiscard]] const geometry::Object &getObject() const;
+    [[nodiscard]] const glm::mat4 &getTransformMatrix() const;
 
 private:
     std::shared_ptr<geometry::Object> m_object;

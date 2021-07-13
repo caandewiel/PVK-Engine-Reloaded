@@ -21,6 +21,7 @@
 #include "../asset/AssetHelper.hpp"
 #include "../asset/Blueprint.hpp"
 #include "../engine/Graphics.hpp"
+#include "../engine/shader/Texture.hpp"
 #include "../geometry/Material.hpp"
 #include "../geometry/Mesh.hpp"
 #include "../vulkan/Helper.hpp"
@@ -115,6 +116,25 @@ absl::flat_hash_map<uint32_t, std::shared_ptr<pvk::geometry::Mesh>> getMeshLooku
     return meshLookup;
 }
 
+absl::flat_hash_map<std::string, std::shared_ptr<pvk::engine::Texture>> getTextureLookup(pvk::asset::Blueprint &blueprint,
+                                                                                      const std::filesystem::path &path)
+{
+    absl::flat_hash_map<std::string, std::shared_ptr<pvk::engine::Texture>> textureLookup{};
+
+    auto currentTexture = 0;
+
+    for (const auto &material : blueprint.materials)
+    {
+        for (const auto &[index, texture] : material.textureData)
+        {
+            textureLookup.insert({index, pvk::io::loadTexture(path.parent_path() / texture)});
+            currentTexture++;
+        }
+    }
+
+    return textureLookup;
+}
+
 absl::flat_hash_map<uint32_t, std::shared_ptr<pvk::geometry::Material>> getMaterialLookup(
     pvk::asset::Blueprint &blueprint)
 {
@@ -147,11 +167,13 @@ std::shared_ptr<geometry::Object> loadObject(const std::filesystem::path &path)
     blueprint.matrices = pvk::asset::convertBinaryToVector<glm::mat4>(
         pvk::asset::readFromInputFileStream<std::vector<char>>(inputFile, matricesSize));
 
+    auto textureLookup = getTextureLookup(blueprint, path);
     auto materialLookup = getMaterialLookup(blueprint);
     auto meshLookup = getMeshLookup(blueprint, path);
     auto nodeLookup = getNodeLookup(blueprint, meshLookup, materialLookup);
 
-    return std::make_unique<geometry::Object>(std::move(meshLookup), std::move(nodeLookup), std::move(materialLookup));
+    return std::make_unique<geometry::Object>(
+        std::move(meshLookup), std::move(nodeLookup), std::move(materialLookup), std::move(textureLookup));
 }
 
 std::pair<std::vector<geometry::Vertex>, std::vector<uint32_t>> loadMeshBuffers(const std::filesystem::path &path)
@@ -182,6 +204,30 @@ std::pair<std::vector<geometry::Vertex>, std::vector<uint32_t>> loadMeshBuffers(
     memcpy(indexBuffer.data(), output.data() + vertexSizeOriginal, indexSizeOriginal);
 
     return std::make_pair(vertexBuffer, indexBuffer);
+}
+
+std::shared_ptr<engine::Texture> loadTexture(const std::filesystem::path &path)
+{
+    std::ifstream inputFile;
+    inputFile.open(path, std::ios::binary);
+    inputFile.seekg(0);
+
+    const auto metadataSize = pvk::asset::readFromInputFileStream<uint32_t>(inputFile);
+    const auto metadataContent = pvk::asset::readFromInputFileStream<std::vector<char>>(inputFile, metadataSize);
+    const auto metadata = nlohmann::json::parse(metadataContent.begin(), metadataContent.end());
+
+    const auto height = metadata["height"].get<uint32_t>();
+    const auto width = metadata["width"].get<uint32_t>();
+    const auto targetSize = metadata["textureSizeOriginal"].get<uint32_t>();
+    const auto compressedSize = metadata["textureSizeCompressed"].get<uint32_t>();
+
+    auto binaryBlob = pvk::asset::readFromInputFileStream<std::vector<char>>(inputFile, compressedSize);
+    auto output = pvk::asset::uncompress(std::move(binaryBlob), targetSize);
+
+    auto texture = std::make_shared<engine::Texture>(height * width * 4, width, height);
+    texture->update(output.data());
+
+    return texture;
 }
 
 } // namespace pvk::io

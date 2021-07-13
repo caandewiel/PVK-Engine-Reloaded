@@ -12,4 +12,9 @@ Material::Material(std::string &&name, absl::flat_hash_map<std::string, std::str
     m_uniformBuffer = std::make_unique<pvk::engine::UniformBuffer>(sizeof(m_materialRaw));
     m_uniformBuffer->update(&m_materialRaw);
 }
+
+const engine::UniformBuffer& Material::getUniformBuffer() const
+{
+    return *m_uniformBuffer;
+}
 } // namespace pvk::geometry

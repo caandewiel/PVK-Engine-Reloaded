@@ -6,6 +6,7 @@
 #include <fstream>
 #include <iostream>
 #include <memory>
+#include <stdexcept>
 #include <streambuf>
 #include <utility>
 #include <vector>
@@ -17,18 +18,24 @@
 #include <assimp/mesh.h>
 #include <assimp/postprocess.h>
 #include <assimp/scene.h>
+#include <assimp/texture.h>
 
 #include <fmt/format.h>
 
 #include <lz4.h>
 
 #include <json.hpp>
+#include "assimp/material.h"
+
+#define STB_IMAGE_IMPLEMENTATION
+#include <stb_image.h>
 
 #include "../lib/asset/AssetHelper.hpp"
 #include "../lib/asset/Blueprint.hpp"
 #include "../lib/asset/MaterialInfo.hpp"
 
-constexpr auto assimpFlags = aiProcess_OptimizeMeshes | aiProcess_GenNormals | aiProcess_FlipUVs;
+constexpr auto assimpFlags =
+    aiProcess_OptimizeMeshes | aiProcess_GenNormals | aiProcess_FlipUVs | aiProcess_EmbedTextures;
 constexpr auto meshFlag = "MESH";
 // constexpr auto materialFlag = "MAT_";
 // constexpr auto textureFlag = "TEX ";
@@ -38,6 +45,7 @@ struct Vertex
     glm::vec3 position{};
     glm::vec3 normal{};
     glm::vec3 color{};
+    glm::vec2 uv{};
 };
 
 struct Object
@@ -62,6 +70,7 @@ void loadMeshes(const aiScene *scene, const std::filesystem::path &destinationPa
         const auto vertices = std::span(mesh->mVertices, mesh->mNumVertices);
         const auto normals = std::span(mesh->mNormals, mesh->mNumVertices);
         const auto colors = std::span(mesh->mColors[0], mesh->mNumVertices);
+        const auto uvs = std::span(mesh->mTextureCoords[0], mesh->mNumVertices);
         const auto faces = std::span(mesh->mFaces, mesh->mNumFaces);
 
         for (size_t i = 0; i < vertices.size(); i++)
@@ -77,6 +86,11 @@ void loadMeshes(const aiScene *scene, const std::filesystem::path &destinationPa
             if (mesh->HasVertexColors(0))
             {
                 vertex.color = {colors[i].r, colors[i].g, colors[i].b};
+            }
+
+            if (mesh->HasTextureCoords(0))
+            {
+                vertex.uv = {uvs[i].x, uvs[i].y};
             }
 
             vertexBuffer.emplace_back(vertex);
@@ -124,8 +138,62 @@ void loadMeshes(const aiScene *scene, const std::filesystem::path &destinationPa
     }
 }
 
-void loadMaterials(const aiScene *scene,
-                   const std::shared_ptr<pvk::asset::Blueprint> &blueprint)
+void loadTextures(const aiScene *scene, const std::filesystem::path &destinationPath)
+{
+    const auto textures = std::span(scene->mTextures, scene->mNumTextures);
+
+    for (const auto &texture : textures)
+    {
+        std::vector<unsigned char> textureBuffer;
+
+        // If height is 0, take only width
+        size_t textureBufferSize;
+        if (texture->mHeight == 0 && (std::string(texture->achFormatHint) == "png" || std::string(texture->achFormatHint) == "jpg"))
+        {
+            textureBufferSize = static_cast<uint32_t>(texture->mWidth * sizeof(aiTexel));
+            textureBuffer.resize(textureBufferSize);
+            memcpy(textureBuffer.data(), texture->pcData, textureBufferSize);
+
+            int x, y, c;
+            const auto bufferConverted =
+                stbi_load_from_memory(textureBuffer.data(), textureBufferSize, &x, &y, &c, STBI_rgb_alpha);
+
+            std::vector<char> textureConverted;
+            textureConverted.resize(x * y * 4);
+            memcpy(textureConverted.data(), bufferConverted, textureConverted.size());
+
+            auto binaryBlob = pvk::asset::compress(std::move(textureConverted));
+
+            nlohmann::json metadata;
+            metadata["height"] = y;
+            metadata["width"] = x;
+            metadata["textureSizeOriginal"] = textureBufferSize;
+            metadata["textureSizeCompressed"] = binaryBlob.size();
+            auto metadataContent = metadata.dump();
+
+            std::ofstream binaryFile;
+            const auto destinationPathTexture =
+                (destinationPath / std::filesystem::path(texture->mFilename.C_Str())).replace_extension("tex");
+            binaryFile.open(destinationPathTexture, std::ios::binary | std::ios::out);
+
+            const auto metadataSize = htonl(metadataContent.size());
+            binaryFile.write(reinterpret_cast<const char *>(&metadataSize), sizeof(uint32_t));
+            binaryFile.write(metadataContent.data(), metadataContent.size());
+            binaryFile.write(binaryBlob.data(), binaryBlob.size());
+            binaryFile.close();
+
+            std::cout << "Written texture to " << destinationPathTexture << "\n";
+        }
+        else
+        {
+            throw std::runtime_error("Unsupported texture format");
+        }
+    }
+}
+
+constexpr std::array<std::pair<aiTextureType, const char *>, 2> textureTypes = {{{aiTextureType_DIFFUSE, "diffuse"}, {aiTextureType_BASE_COLOR, "baseColor"}}};
+
+void loadMaterials(const aiScene *scene, const std::shared_ptr<pvk::asset::Blueprint> &blueprint)
 {
     std::vector<nlohmann::json> materialInfos;
     const auto materials = std::span(scene->mMaterials, scene->mNumMaterials);
@@ -137,11 +205,23 @@ void loadMaterials(const aiScene *scene,
         materialInfo.identifier = currentMaterialIndex;
         materialInfo.name = material->GetName().C_Str();
 
+        for (const auto &[textureType, textureIndex] : textureTypes)
+        {
+            aiString texturePath;
+            if (material->GetTextureCount(textureType) > 0)
+            {
+                material->GetTexture(textureType, 0, &texturePath);
+                auto embeddedTexturePath =
+                    std::filesystem::path(scene->GetEmbeddedTexture(texturePath.C_Str())->mFilename.C_Str());
+                materialInfo.textureData.insert({textureIndex, embeddedTexturePath.replace_extension(".tex")});
+            }
+        }
+
         const auto properties = std::span(material->mProperties, material->mNumProperties);
 
         for (const auto &property : properties)
         {
-            materialInfo.customData.insert(std::make_pair(property->mKey.C_Str(), property->mData));
+            materialInfo.customData.insert({property->mKey.C_Str(), property->mData});
         }
 
         blueprint->materials.emplace_back(std::move(materialInfo));
@@ -230,7 +310,7 @@ int main(int argc, char *argv[])
     // }
 
     // std::filesystem::path filePath{argv[1]};
-    std::filesystem::path filePath{"/Users/christian/walk.glb"};
+    std::filesystem::path filePath{"/Users/christian/fox.glb"};
 
     std::cout << fmt::format("Loading file {}", filePath.string()) << "\n";
 
@@ -244,6 +324,7 @@ int main(int argc, char *argv[])
 
     loadMeshes(scene, destinationPath);
     loadNodes(scene, destinationPath, filePath.stem());
+    loadTextures(scene, destinationPath);
     // writeJsonToBinary();
     // loadJson();
 }

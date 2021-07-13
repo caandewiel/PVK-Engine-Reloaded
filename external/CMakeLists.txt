@@ -23,6 +23,7 @@ add_library(glm INTERFACE)
 add_library(json INTERFACE)
 add_library(fa INTERFACE)
 add_library(vma INTERFACE)
+add_library(stb_image INTERFACE)
 
 # Static libraries
 add_library(lz4 STATIC)
@@ -46,7 +47,10 @@ target_sources(lz4 PRIVATE ${LZ4_SRCS_LIB} ${LZ4_SRCS})
 target_include_directories(fa INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/FontAwesome/")
 
 # VMA
-target_include_directories(vma INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/proxy")
+target_include_directories(vma INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/proxy/vma/")
+
+# STB Image
+target_include_directories(stb_image INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/proxy/stb_image/")
 
 # ImGUI
 target_include_directories(imgui PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/imgui/")

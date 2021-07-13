@@ -48,6 +48,7 @@ public:
     [[nodiscard]] const vulkan::Device &getDevice() const;
     [[nodiscard]] const vulkan::Surface &getSurface() const;
     [[nodiscard]] const vulkan::SwapChain &getSwapChain() const;
+    [[nodiscard]] const vulkan::DescriptorPool &getDescriptorPool() const;
     [[nodiscard]] const vulkan::MemoryAllocator &getMemoryAllocator() const;
     [[nodiscard]] const engine::RenderPipeline &getRenderPipeline() const;
 
@@ -68,6 +69,7 @@ private:
     std::unique_ptr<vulkan::Surface> m_surface{};
     std::unique_ptr<vulkan::Device> m_device{};
     std::unique_ptr<vulkan::SwapChain> m_swapChain{};
+    std::unique_ptr<vulkan::DescriptorPool> m_descriptorPool;
     std::unique_ptr<engine::RenderPipeline> m_renderPipeline{};
     std::unique_ptr<vulkan::MemoryAllocator> m_memoryAllocator{};
 };

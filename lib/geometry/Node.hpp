@@ -17,6 +17,7 @@ public:
 
     [[nodiscard]] bool hasParent() const;
     [[nodiscard]] bool hasMesh() const;
+    [[nodiscard]] bool hasChildren() const;
 
     [[nodiscard]] const std::string &getName() const;
     [[nodiscard]] const std::vector<std::weak_ptr<Node>> &getChildren() const;

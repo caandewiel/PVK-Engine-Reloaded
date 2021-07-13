@@ -36,9 +36,6 @@ public:
 
     virtual void render(const pvk::command_buffer::CommandBuffer &commandBuffer) = 0;
     void render();
-    void renderObject(const pvk::engine::Shader &renderStage,
-                      const pvk::command_buffer::CommandBuffer &commandBuffer,
-                      const pvk::geometry::Object &object);
     void registerRenderStage(const std::string &identifier, std::unique_ptr<Shader> &&renderStage);
 
     template <class T> void initializeRenderStage(const std::string &identifier)
@@ -54,7 +51,6 @@ public:
 
     [[nodiscard]] const vulkan::RenderPass &getRenderPass() const;
     [[nodiscard]] const vulkan::CommandPool &getCommandPool() const;
-    [[nodiscard]] const vulkan::DescriptorPool &getDescriptorPool() const;
     [[nodiscard]] const command_buffer::CommandBuffer &getCommandBuffer() const;
     [[nodiscard]] const vulkan::FrameBuffer &getFrameBuffer() const;
     [[nodiscard]] const vulkan::Pipeline &getPipeline() const;
@@ -74,7 +70,6 @@ public:
 private:
     std::unique_ptr<vulkan::RenderPass> m_renderPass{};
     std::unique_ptr<vulkan::CommandPool> m_commandPool{};
-    std::unique_ptr<vulkan::DescriptorPool> m_descriptorPool;
     std::unique_ptr<command_buffer::CommandBuffer> m_commandBuffer{};
     std::unique_ptr<vulkan::FrameBuffer> m_frameBuffer{};
     std::unique_ptr<vulkan::Pipeline> m_pipeline{};

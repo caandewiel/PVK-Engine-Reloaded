@@ -7,6 +7,8 @@
 #include <fmt/core.h>
 
 #include <GLFW/glfw3.h>
+#include "lib/engine/shader/Descriptor.hpp"
+#include "lib/geometry/Mesh.hpp"
 
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
@@ -41,8 +43,6 @@ struct UniformBufferObject
 {
     glm::mat4 view;
     glm::mat4 projection;
-    glm::mat4 model;
-    glm::vec3 color;
 };
 
 class MyRenderPipeline : public pvk::engine::RenderPipeline
@@ -58,15 +58,24 @@ public:
 
         auto swapChainExtent = pvk::graphics::get()->getSwapChain().getSwapChainExtent();
 
-        ubo.model = glm::mat4(1.0f);
         ubo.projection =
             glm::perspective(glm::radians(45.0f), swapChainExtent.width / (float)swapChainExtent.height, 0.1f, 1000.0f);
         ubo.projection[1][1] *= -1;
-        ubo.color = {1.0F, 0.0F, 1.0F};
 
         m_bufferObject = std::make_unique<pvk::engine::UniformBuffer>(sizeof(UniformBufferObject));
         m_bufferObject->update(&ubo);
         m_shader->bindDescriptor("uniformBufferObject", *m_bufferObject);
+        m_shader->bindObjectDescriptor(*getScene().getObjects().begin()->get(),
+                                       "material",
+                                       [](const pvk::geometry::Object &object, const pvk::geometry::Mesh &mesh) -> const pvk::engine::Descriptor & {
+                                           return mesh.getMaterial().getUniformBuffer();
+                                       });
+
+        m_shader->bindObjectDescriptor(*getScene().getObjects().begin()->get(),
+                                       "texSampler",
+                                       [](const pvk::geometry::Object &object, const pvk::geometry::Mesh &mesh) -> const pvk::engine::Descriptor & {
+                                           return object.getTexture("diffuse");
+                                       });
 
         auto treeWidget = std::make_unique<pvk::ui::TreeWidget>();
         treeWidget->setContent(*getScene().getObjects().begin()->get());
@@ -83,7 +92,7 @@ public:
     {
         for (const auto &entity : getScene().getEntities())
         {
-            m_shader->renderObject(commandBuffer, entity->getObject());
+            m_shader->renderEntity(commandBuffer, *entity);
         }
     }
 
@@ -92,8 +101,6 @@ private:
     std::unique_ptr<pvk::engine::UniformBuffer> m_bufferObject{};
 
     UniformBufferObject ubo{};
-
-    glm::vec4 pushConstant{1.0F, 1.0F, 0.0F, 0.0F};
 };
 
 class PvkApplication : public pvk::Application
@@ -105,7 +112,7 @@ public:
         auto &renderPipeline = pvk::graphics::get()->getRenderPipeline<MyRenderPipeline>();
         glfwSetWindowUserPointer(pvk::graphics::get()->getWindow().getWindow(), this);
 
-        auto object = pvk::io::loadObject("/Users/christian/walk/walk.object");
+        auto object = pvk::io::loadObject("/Users/christian/trex/trex.object");
         auto bounds = object->getBounds();
         auto center = (bounds.first + bounds.second) / glm::vec3(2.0F);
         auto radius = center - bounds.first - bounds.first;
@@ -207,9 +214,9 @@ private:
 
 int main()
 {
-    auto application = std::make_unique<PvkApplication>();
-    application->initialize();
-    application->run();
+    PvkApplication application;
+    application.initialize();
+    application.run();
 
     return 0;
 }

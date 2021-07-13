@@ -121,10 +121,10 @@ std::vector<vk::DescriptorSetLayout> initializeDescriptorSetLayouts(
 
     std::vector<vk::DescriptorSetLayout> descriptorSetLayouts{};
 
-    for (const auto &descriptorSet : pipelineDefinition.descriptorSets)
+    for (size_t i = 0; i < pipelineDefinition.descriptorSets.size(); i++)
     {
         vk::DescriptorSetLayoutCreateInfo descriptorSetLayoutCreateInfo;
-        descriptorSetLayoutCreateInfo.setBindings(descriptorSet.second);
+        descriptorSetLayoutCreateInfo.setBindings(pipelineDefinition.descriptorSets.at(i));
 
         descriptorSetLayouts.emplace_back(device.createDescriptorSetLayout(descriptorSetLayoutCreateInfo));
     }

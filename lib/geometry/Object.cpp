@@ -66,13 +66,19 @@ namespace pvk::geometry
 {
 Object::Object(absl::flat_hash_map<uint32_t, std::shared_ptr<Mesh>> &&meshLookup,
                absl::flat_hash_map<uint32_t, std::shared_ptr<Node>> &&nodeLookup,
-               absl::flat_hash_map<uint32_t, std::shared_ptr<Material>> &&materialLookup)
+               absl::flat_hash_map<uint32_t, std::shared_ptr<Material>> &&materialLookup,
+               absl::flat_hash_map<std::string, std::shared_ptr<engine::Texture>> &&textureLookup)
     : m_meshLookup(std::move(meshLookup)), m_nodeLookup(std::move(nodeLookup)),
-      m_materialLookup(std::move(materialLookup))
+      m_materialLookup(std::move(materialLookup)), m_textureLookup(std::move(textureLookup))
 {
     auto bounds = calculateBounds(m_meshLookup);
     m_minBounds = bounds.first;
     m_maxBounds = bounds.second;
+}
+
+const engine::Texture &Object::getTexture(const std::string &textureIndex) const
+{
+    return *m_textureLookup.at(textureIndex);
 }
 
 const Mesh &Object::getMesh(uint32_t meshIndex) const
@@ -85,6 +91,11 @@ const Mesh &Object::getMesh(uint32_t meshIndex) const
     {
         throw pvk::PvkExceptionAsset(fmt::format("Invalid mesh index '{}'", meshIndex));
     }
+}
+
+size_t Object::getNumberOfMeshes() const
+{
+    return m_meshLookup.size();
 }
 
 const Node &Object::getNode(uint32_t nodeIndex) const

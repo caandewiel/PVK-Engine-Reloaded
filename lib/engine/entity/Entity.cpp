@@ -1,10 +1,14 @@
 #include "Entity.hpp"
 
+#include <cmath>
 #include <memory>
 #include <utility>
 
+#include <glm/ext/matrix_transform.hpp>
 #include <glm/ext/vector_float3.hpp>
 #include <glm/fwd.hpp>
+#include <glm/gtx/euler_angles.hpp>
+#include <glm/trigonometric.hpp>
 
 namespace pvk::engine
 {
@@ -13,8 +17,7 @@ Transform::Transform()
     m_transform.m_position = glm::vec3(0.0F);
     m_transform.m_scale = glm::vec3(1.0F);
     m_transform.m_rotation = glm::vec3(0.0F);
-
-    initializeUniformBuffer();
+    updateTransformMatrix();
 }
 
 Transform::Transform(glm::vec3 position)
@@ -22,8 +25,7 @@ Transform::Transform(glm::vec3 position)
     m_transform.m_position = position;
     m_transform.m_scale = glm::vec3(1.0F);
     m_transform.m_rotation = glm::vec3(0.0F);
-
-    initializeUniformBuffer();
+    updateTransformMatrix();
 }
 
 const glm::vec3 &Transform::getPosition() const
@@ -41,15 +43,17 @@ const glm::vec3 &Transform::getRotation() const
     return m_transform.m_rotation;
 }
 
-void Transform::initializeUniformBuffer()
+const glm::mat4 &Transform::getTransformMatrix() const
 {
-    m_uniformBuffer = std::make_unique<UniformBuffer>(sizeof(m_transform));
-    updateUniformBuffer();
+    return m_transform.m_transformation;
 }
 
-void Transform::updateUniformBuffer()
+void Transform::updateTransformMatrix()
 {
-    m_uniformBuffer->update(&m_transform);
+    m_transform.m_transformation = glm::mat4(1.0F);
+    m_transform.m_transformation = glm::translate(m_transform.m_transformation, m_transform.m_position);
+    m_transform.m_transformation = glm::scale(m_transform.m_transformation, m_transform.m_scale);
+    m_transform.m_transformation *= glm::yawPitchRoll(m_transform.m_rotation.x, m_transform.m_rotation.y, m_transform.m_rotation.z);
 }
 
 Entity::Entity(std::shared_ptr<geometry::Object> object) : m_object(std::move(object))
@@ -65,5 +69,10 @@ Entity::Entity(std::shared_ptr<geometry::Object> object, Transform transform)
 const geometry::Object &Entity::getObject() const
 {
     return *m_object;
+}
+
+const glm::mat4 &Entity::getTransformMatrix() const
+{
+    return m_transform.getTransformMatrix();
 }
 } // namespace pvk::engine

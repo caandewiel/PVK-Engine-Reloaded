@@ -6,8 +6,8 @@ set(EXCEPTIONS_HEADER_LIST exceptions/PvkException.hpp exceptions/PvkExceptionAs
 set(RENDER_STAGE_HEADER_LIST render_stage/Shader.hpp render_stage/ShaderBuilder.hpp render_stage/ShaderReflection.hpp)
 set(RENDER_STAGE_SOURCE_LIST render_stage/Shader.cpp render_stage/ShaderBuilder.cpp render_stage/ShaderReflection.cpp)
 
-set(SHADER_HEADER_LIST shader/Descriptor.hpp shader/UniformBuffer.hpp)
-set(SHADER_SOURCE_LIST shader/UniformBuffer.cpp)
+set(SHADER_HEADER_LIST shader/Descriptor.hpp shader/UniformBuffer.hpp shader/Texture.hpp)
+set(SHADER_SOURCE_LIST shader/UniformBuffer.cpp shader/Texture.cpp)
 
 set(CAMERA_HEADER_LIST camera/Camera.hpp camera/CameraArc.hpp)
 set(CAMERA_SOURCE_LIST camera/Camera.cpp camera/CameraArc.cpp)

@@ -19,6 +19,30 @@
 #include "RenderPipeline.hpp"
 #include "exceptions/PvkExceptionGraphics.hpp"
 
+namespace
+{
+std::unique_ptr<pvk::vulkan::DescriptorPool> initializeDescriptorPool()
+{
+    // This workaround is adapted from:
+    // https://github.com/EQMG/Acid/blob/cb1e62a80cdba662a0b2c1ba008b2bf4a397877a/Sources/Graphics/Pipelines/Shader.cpp
+    constexpr uint32_t descriptorPoolMaxNumberOfSets = 8192;
+    constexpr uint32_t descriptorCountHigh = 4096;
+    constexpr uint32_t descriptorCountLow = 2048;
+
+    std::vector<vk::DescriptorPoolSize> descriptorPoolSizes = {
+        {vk::DescriptorType::eCombinedImageSampler, descriptorCountHigh},
+        {vk::DescriptorType::eUniformBuffer, descriptorCountLow},
+        {vk::DescriptorType::eStorageImage, descriptorCountLow},
+        {vk::DescriptorType::eUniformTexelBuffer, descriptorCountLow},
+        {vk::DescriptorType::eStorageTexelBuffer, descriptorCountLow},
+        {vk::DescriptorType::eStorageBuffer, descriptorCountLow},
+    };
+
+    return std::make_unique<pvk::vulkan::DescriptorPool>(
+        descriptorPoolSizes, vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet, descriptorPoolMaxNumberOfSets);
+}
+} // namespace
+
 namespace pvk::graphics
 {
 std::unique_ptr<Graphics> Graphics::m_graphics = nullptr;
@@ -47,6 +71,7 @@ void Graphics::initialize()
     m_device = std::make_unique<pvk::vulkan::Device>(true);
     m_memoryAllocator = std::make_unique<pvk::vulkan::MemoryAllocator>();
     m_swapChain = std::make_unique<pvk::vulkan::SwapChain>();
+    m_descriptorPool = initializeDescriptorPool();
 }
 
 void Graphics::draw() const
@@ -74,6 +99,7 @@ void Graphics::render(Application &application) const
 void Graphics::destroy()
 {
     m_renderPipeline.reset();
+    m_descriptorPool.reset();
     m_swapChain.reset();
     m_surface.reset();
     m_memoryAllocator.reset();
@@ -129,6 +155,16 @@ const vulkan::SwapChain &Graphics::getSwapChain() const
     }
 
     return *m_swapChain;
+}
+
+const vulkan::DescriptorPool &Graphics::getDescriptorPool() const
+{
+    if (m_descriptorPool == nullptr)
+    {
+        throw PvkExceptionGraphics("DescriptorPool has not yet been initialized.");
+    }
+
+    return *m_descriptorPool;
 }
 
 const vulkan::MemoryAllocator &Graphics::getMemoryAllocator() const

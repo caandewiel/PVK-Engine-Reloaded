@@ -25,6 +25,8 @@ class Material
 public:
     Material(std::string &&name, absl::flat_hash_map<std::string, std::string> &&customProperties);
 
+    [[nodiscard]] const engine::UniformBuffer& getUniformBuffer() const;
+
     template <typename T> T getCustomProperty(const std::string &identifier) const
     {
         const auto customProperty = m_customProperties.find(identifier);

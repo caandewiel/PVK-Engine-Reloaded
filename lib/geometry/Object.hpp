@@ -11,6 +11,7 @@
 #include "Material.hpp"
 #include "Mesh.hpp"
 #include "Node.hpp"
+#include "../engine/shader/Texture.hpp"
 
 namespace pvk::geometry
 {
@@ -19,9 +20,14 @@ class Object : public Drawable
 public:
     Object(absl::flat_hash_map<uint32_t, std::shared_ptr<Mesh>> &&meshLookup,
            absl::flat_hash_map<uint32_t, std::shared_ptr<Node>> &&nodeLookup,
-           absl::flat_hash_map<uint32_t, std::shared_ptr<Material>> &&materialLookup);
+           absl::flat_hash_map<uint32_t, std::shared_ptr<Material>> &&materialLookup,
+           absl::flat_hash_map<std::string, std::shared_ptr<engine::Texture>> &&textureLookup);
+
+    [[nodiscard]] const engine::Texture &getTexture(const std::string &textureIndex) const;
 
     [[nodiscard]] const Mesh &getMesh(uint32_t meshIndex) const;
+    [[nodiscard]] size_t getNumberOfMeshes() const;
+
     [[nodiscard]] const Node &getNode(uint32_t nodeIndex) const;
     [[nodiscard]] const Node &getRootNode() const;
 
@@ -36,6 +42,7 @@ private:
     absl::flat_hash_map<uint32_t, std::shared_ptr<Mesh>> m_meshLookup{};
     absl::flat_hash_map<uint32_t, std::shared_ptr<Node>> m_nodeLookup{};
     absl::flat_hash_map<uint32_t, std::shared_ptr<Material>> m_materialLookup{};
+    absl::flat_hash_map<std::string, std::shared_ptr<engine::Texture>> m_textureLookup{};
     absl::flat_hash_map<std::string, void *> m_pushConstants{};
 
     glm::vec3 m_minBounds;

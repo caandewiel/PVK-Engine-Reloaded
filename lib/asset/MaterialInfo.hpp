@@ -1,6 +1,7 @@
 #ifndef __MATERIALINFO_H__
 #define __MATERIALINFO_H__
 
+#include <filesystem>
 #include <string>
 #include <vector>
 
@@ -19,6 +20,7 @@ struct MaterialInfo
     uint32_t identifier;
     std::string name;
     absl::flat_hash_map<std::string, std::string> customData;
+    absl::flat_hash_map<std::string, std::filesystem::path> textureData;
 };
 } // namespace pvk::asset
 
