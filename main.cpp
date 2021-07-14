@@ -112,7 +112,7 @@ public:
         auto &renderPipeline = pvk::graphics::get()->getRenderPipeline<MyRenderPipeline>();
         glfwSetWindowUserPointer(pvk::graphics::get()->getWindow().getWindow(), this);
 
-        auto object = pvk::io::loadObject("/Users/christian/trex/trex.object");
+        auto object = pvk::io::loadObject("/Users/christian/Downloads/DamagedHelmet/DamagedHelmet.object");
         auto bounds = object->getBounds();
         auto center = (bounds.first + bounds.second) / glm::vec3(2.0F);
         auto radius = center - bounds.first - bounds.first;

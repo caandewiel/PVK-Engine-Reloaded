@@ -24,6 +24,7 @@ add_library(json INTERFACE)
 add_library(fa INTERFACE)
 add_library(vma INTERFACE)
 add_library(stb_image INTERFACE)
+add_library(gli INTERFACE)
 
 # Static libraries
 add_library(lz4 STATIC)
@@ -31,6 +32,9 @@ add_library(imgui STATIC)
 
 # GLM
 target_include_directories(glm INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/glm/")
+
+# GLI
+target_include_directories(gli INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/proxy/gli/")
 
 # JSON
 target_include_directories(json INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/json/")

@@ -16,6 +16,9 @@
 
 #include <json.hpp>
 
+#define STB_IMAGE_IMPLEMENTATION
+#include <stb_image.h>
+
 #include "io.hpp"
 
 #include "../asset/AssetHelper.hpp"
@@ -208,24 +211,11 @@ std::pair<std::vector<geometry::Vertex>, std::vector<uint32_t>> loadMeshBuffers(
 
 std::shared_ptr<engine::Texture> loadTexture(const std::filesystem::path &path)
 {
-    std::ifstream inputFile;
-    inputFile.open(path, std::ios::binary);
-    inputFile.seekg(0);
-
-    const auto metadataSize = pvk::asset::readFromInputFileStream<uint32_t>(inputFile);
-    const auto metadataContent = pvk::asset::readFromInputFileStream<std::vector<char>>(inputFile, metadataSize);
-    const auto metadata = nlohmann::json::parse(metadataContent.begin(), metadataContent.end());
-
-    const auto height = metadata["height"].get<uint32_t>();
-    const auto width = metadata["width"].get<uint32_t>();
-    const auto targetSize = metadata["textureSizeOriginal"].get<uint32_t>();
-    const auto compressedSize = metadata["textureSizeCompressed"].get<uint32_t>();
-
-    auto binaryBlob = pvk::asset::readFromInputFileStream<std::vector<char>>(inputFile, compressedSize);
-    auto output = pvk::asset::uncompress(std::move(binaryBlob), targetSize);
-
-    auto texture = std::make_shared<engine::Texture>(height * width * 4, width, height);
-    texture->update(output.data());
+    int width, height, c;
+    const auto textureBuffer = stbi_load(path.c_str(), &width, &height, &c, STBI_rgb_alpha);
+    
+    auto texture = std::make_shared<engine::Texture>(height * width * STBI_rgb_alpha, width, height);
+    texture->update(textureBuffer);
 
     return texture;
 }

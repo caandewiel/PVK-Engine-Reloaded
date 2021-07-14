@@ -130,7 +130,7 @@ void Shader::bindObjectDescriptor(
 
     vk::DescriptorSetAllocateInfo descriptorSetAllocateInfo;
     descriptorSetAllocateInfo.setDescriptorPool(pvk::graphics::get()->getDescriptorPool().getDescriptorPool());
-    descriptorSetAllocateInfo.setSetLayouts(descriptorSetLayout);
+    descriptorSetAllocateInfo.setSetLayouts(layouts);
 
     auto descriptorSets = device.allocateDescriptorSets(descriptorSetAllocateInfo);
 

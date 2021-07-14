@@ -3,4 +3,4 @@ project(pvk_reloaded_asset_manager)
 
 add_executable(${PROJECT_NAME} main.cpp)
 target_compile_options(pvk_reloaded_asset_manager PRIVATE -Wall -Wextra -Wshadow -Wno-unused-parameter -Werror)
-target_link_libraries(${PROJECT_NAME} assimp fmt lz4 json glm stb_image pvk_reloaded_asset)
+target_link_libraries(${PROJECT_NAME} assimp fmt lz4 json glm stb_image gli pvk_reloaded_asset)

@@ -15,6 +15,7 @@
 #include <absl/container/flat_hash_map.h>
 
 #include <assimp/Importer.hpp>
+#include <assimp/material.h>
 #include <assimp/mesh.h>
 #include <assimp/postprocess.h>
 #include <assimp/scene.h>
@@ -22,13 +23,17 @@
 
 #include <fmt/format.h>
 
+#include <gli.hpp>
+
 #include <lz4.h>
 
 #include <json.hpp>
-#include "assimp/material.h"
 
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
+
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include <stb_image_write.h>
 
 #include "../lib/asset/AssetHelper.hpp"
 #include "../lib/asset/Blueprint.hpp"
@@ -142,45 +147,27 @@ void loadTextures(const aiScene *scene, const std::filesystem::path &destination
 {
     const auto textures = std::span(scene->mTextures, scene->mNumTextures);
 
-    for (const auto &texture : textures)
+    for (size_t i = 0; i < textures.size(); i++)
     {
+        const auto &texture = textures[i];
         std::vector<unsigned char> textureBuffer;
 
         // If height is 0, take only width
         size_t textureBufferSize;
-        if (texture->mHeight == 0 && (std::string(texture->achFormatHint) == "png" || std::string(texture->achFormatHint) == "jpg"))
+        const auto textureFormat = std::string(texture->achFormatHint);
+
+        if (texture->mHeight == 0 && (textureFormat == "png" || textureFormat == "jpg"))
         {
-            textureBufferSize = static_cast<uint32_t>(texture->mWidth * sizeof(aiTexel));
+            textureBufferSize = static_cast<uint64_t>(texture->mWidth);
             textureBuffer.resize(textureBufferSize);
             memcpy(textureBuffer.data(), texture->pcData, textureBufferSize);
 
-            int x, y, c;
-            const auto bufferConverted =
-                stbi_load_from_memory(textureBuffer.data(), textureBufferSize, &x, &y, &c, STBI_rgb_alpha);
-
-            std::vector<char> textureConverted;
-            textureConverted.resize(x * y * 4);
-            memcpy(textureConverted.data(), bufferConverted, textureConverted.size());
-
-            auto binaryBlob = pvk::asset::compress(std::move(textureConverted));
-
-            nlohmann::json metadata;
-            metadata["height"] = y;
-            metadata["width"] = x;
-            metadata["textureSizeOriginal"] = textureBufferSize;
-            metadata["textureSizeCompressed"] = binaryBlob.size();
-            auto metadataContent = metadata.dump();
+            auto destinationPathTexture =
+                destinationPath / std::filesystem::path(std::to_string(i)).replace_extension(textureFormat);
 
             std::ofstream binaryFile;
-            const auto destinationPathTexture =
-                (destinationPath / std::filesystem::path(texture->mFilename.C_Str())).replace_extension("tex");
             binaryFile.open(destinationPathTexture, std::ios::binary | std::ios::out);
-
-            const auto metadataSize = htonl(metadataContent.size());
-            binaryFile.write(reinterpret_cast<const char *>(&metadataSize), sizeof(uint32_t));
-            binaryFile.write(metadataContent.data(), metadataContent.size());
-            binaryFile.write(binaryBlob.data(), binaryBlob.size());
-            binaryFile.close();
+            binaryFile.write(reinterpret_cast<const char *>(textureBuffer.data()), textureBufferSize);
 
             std::cout << "Written texture to " << destinationPathTexture << "\n";
         }
@@ -191,13 +178,16 @@ void loadTextures(const aiScene *scene, const std::filesystem::path &destination
     }
 }
 
-constexpr std::array<std::pair<aiTextureType, const char *>, 2> textureTypes = {{{aiTextureType_DIFFUSE, "diffuse"}, {aiTextureType_BASE_COLOR, "baseColor"}}};
+constexpr std::array<std::pair<aiTextureType, const char *>, 2> textureTypes = {
+    {{aiTextureType_DIFFUSE, "diffuse"}, {aiTextureType_BASE_COLOR, "baseColor"}}};
 
 void loadMaterials(const aiScene *scene, const std::shared_ptr<pvk::asset::Blueprint> &blueprint)
 {
     std::vector<nlohmann::json> materialInfos;
     const auto materials = std::span(scene->mMaterials, scene->mNumMaterials);
     auto currentMaterialIndex = 0;
+
+    const auto textures = std::span(scene->mTextures, scene->mNumTextures);
 
     for (const auto &material : materials)
     {
@@ -211,9 +201,36 @@ void loadMaterials(const aiScene *scene, const std::shared_ptr<pvk::asset::Bluep
             if (material->GetTextureCount(textureType) > 0)
             {
                 material->GetTexture(textureType, 0, &texturePath);
-                auto embeddedTexturePath =
-                    std::filesystem::path(scene->GetEmbeddedTexture(texturePath.C_Str())->mFilename.C_Str());
-                materialInfo.textureData.insert({textureIndex, embeddedTexturePath.replace_extension(".tex")});
+
+                std::filesystem::path destination;
+
+                if (std::filesystem::path(texturePath.C_Str()).string().substr(0, 1) == "*")
+                {
+                    destination = std::filesystem::path(texturePath.C_Str()).string().substr(1, 2);
+                }
+                else
+                {
+                    for (const auto &texture : textures)
+                    {
+                        std::cout << std::filesystem::path(texture->mFilename.C_Str()).string() << " - "
+                                  << std::string(texturePath.C_Str()) << "\n";
+                        if (std::filesystem::path(texture->mFilename.C_Str()).string() ==
+                            std::string(texturePath.C_Str()))
+                        {
+                        }
+
+                        // const char *shortTextureFilename = GetShortFilename(mTextures[i]->mFilename.C_Str());
+                        // if (strcmp(shortTextureFilename, shortFilename) == 0)
+                        // {
+                        //     return mTextures[i];
+                        // }
+                    }
+                }
+                std::cout << destination.replace_extension(scene->GetEmbeddedTexture(texturePath.C_Str())->achFormatHint) << "\n";
+
+                materialInfo.textureData.insert({textureIndex,
+                                                 destination.replace_extension(
+                                                     scene->GetEmbeddedTexture(texturePath.C_Str())->achFormatHint)});
             }
         }
 
@@ -302,15 +319,15 @@ void loadNodes(const aiScene *scene, const std::filesystem::path &destinationPat
 
 int main(int argc, char *argv[])
 {
-    // if (argc < 2)
-    // {
-    //     std::cout << "No path to asset was provided.\n";
+    if (argc < 2)
+    {
+        std::cout << "No path to asset was provided.\n";
 
-    //     return -1;
-    // }
+        return -1;
+    }
 
-    // std::filesystem::path filePath{argv[1]};
-    std::filesystem::path filePath{"/Users/christian/fox.glb"};
+    std::filesystem::path filePath{argv[1]};
+    // std::filesystem::path filePath{"/Users/christian/Downloads/cyber_warrior/scene.gltf"};
 
     std::cout << fmt::format("Loading file {}", filePath.string()) << "\n";
 
