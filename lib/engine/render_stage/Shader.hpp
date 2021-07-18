@@ -14,11 +14,16 @@
 #include "../entity/Entity.hpp"
 #include "../shader/Descriptor.hpp"
 
-#include "../../geometry/Object.hpp"
-
 #include "../../vulkan/CommandBuffer.hpp"
 #include "../../vulkan/DescriptorPool.hpp"
 #include "../../vulkan/Pipeline.hpp"
+
+namespace pvk::geometry
+{
+class Object;
+class Node;
+class Mesh;
+}
 
 namespace pvk::engine
 {

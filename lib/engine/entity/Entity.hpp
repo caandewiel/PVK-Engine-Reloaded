@@ -8,7 +8,10 @@
 
 #include "../shader/UniformBuffer.hpp"
 
-#include "../../geometry/Object.hpp"
+namespace pvk::geometry
+{
+class Object;
+}
 
 namespace pvk::engine
 {

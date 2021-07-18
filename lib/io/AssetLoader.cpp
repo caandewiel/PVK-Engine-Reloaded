@@ -119,35 +119,25 @@ absl::flat_hash_map<uint32_t, std::shared_ptr<pvk::geometry::Mesh>> getMeshLooku
     return meshLookup;
 }
 
-absl::flat_hash_map<std::string, std::shared_ptr<pvk::engine::Texture>> getTextureLookup(pvk::asset::Blueprint &blueprint,
-                                                                                      const std::filesystem::path &path)
-{
-    absl::flat_hash_map<std::string, std::shared_ptr<pvk::engine::Texture>> textureLookup{};
-
-    auto currentTexture = 0;
-
-    for (const auto &material : blueprint.materials)
-    {
-        for (const auto &[index, texture] : material.textureData)
-        {
-            textureLookup.insert({index, pvk::io::loadTexture(path.parent_path() / texture)});
-            currentTexture++;
-        }
-    }
-
-    return textureLookup;
-}
-
 absl::flat_hash_map<uint32_t, std::shared_ptr<pvk::geometry::Material>> getMaterialLookup(
-    pvk::asset::Blueprint &blueprint)
+    pvk::asset::Blueprint &blueprint,
+    const std::filesystem::path &path)
 {
     absl::flat_hash_map<uint32_t, std::shared_ptr<pvk::geometry::Material>> materialLookup{};
 
     for (auto &material : blueprint.materials)
     {
-        materialLookup.insert(std::make_pair(
-            material.identifier,
-            std::make_shared<pvk::geometry::Material>(std::move(material.name), std::move(material.customData))));
+        absl::flat_hash_map<std::string, std::shared_ptr<pvk::engine::Texture>> textureLookup{};
+
+        for (const auto &[index, texture] : material.textureData)
+        {
+            textureLookup.insert({index, pvk::io::loadTexture(path.parent_path() / texture)});
+        }
+
+        materialLookup.insert({material.identifier,
+                               std::make_shared<pvk::geometry::Material>(std::move(material.name),
+                                                                         std::move(material.customData),
+                                                                         std::move(textureLookup))});
     }
 
     return materialLookup;
@@ -170,13 +160,11 @@ std::shared_ptr<geometry::Object> loadObject(const std::filesystem::path &path)
     blueprint.matrices = pvk::asset::convertBinaryToVector<glm::mat4>(
         pvk::asset::readFromInputFileStream<std::vector<char>>(inputFile, matricesSize));
 
-    auto textureLookup = getTextureLookup(blueprint, path);
-    auto materialLookup = getMaterialLookup(blueprint);
+    auto materialLookup = getMaterialLookup(blueprint, path);
     auto meshLookup = getMeshLookup(blueprint, path);
     auto nodeLookup = getNodeLookup(blueprint, meshLookup, materialLookup);
 
-    return std::make_unique<geometry::Object>(
-        std::move(meshLookup), std::move(nodeLookup), std::move(materialLookup), std::move(textureLookup));
+    return std::make_unique<geometry::Object>(std::move(meshLookup), std::move(nodeLookup), std::move(materialLookup));
 }
 
 std::pair<std::vector<geometry::Vertex>, std::vector<uint32_t>> loadMeshBuffers(const std::filesystem::path &path)
@@ -213,7 +201,7 @@ std::shared_ptr<engine::Texture> loadTexture(const std::filesystem::path &path)
 {
     int width, height, c;
     const auto textureBuffer = stbi_load(path.c_str(), &width, &height, &c, STBI_rgb_alpha);
-    
+
     auto texture = std::make_shared<engine::Texture>(height * width * STBI_rgb_alpha, width, height);
     texture->update(textureBuffer);
 

@@ -43,6 +43,7 @@ struct UniformBufferObject
 {
     glm::mat4 view;
     glm::mat4 projection;
+    glm::vec3 cameraPosition;
 };
 
 class MyRenderPipeline : public pvk::engine::RenderPipeline
@@ -71,11 +72,17 @@ public:
                                            return mesh.getMaterial().getUniformBuffer();
                                        });
 
-        m_shader->bindObjectDescriptor(*getScene().getObjects().begin()->get(),
-                                       "texSampler",
-                                       [](const pvk::geometry::Object &object, const pvk::geometry::Mesh &mesh) -> const pvk::engine::Descriptor & {
-                                           return object.getTexture("diffuse");
-                                       });
+        // m_shader->bindObjectDescriptor(*getScene().getObjects().begin()->get(),
+        //                                "baseColorTexture",
+        //                                [](const pvk::geometry::Object &object, const pvk::geometry::Mesh &mesh) -> const pvk::engine::Descriptor & {
+        //                                    return mesh.getMaterial().getTexture("BASE_COLOR");
+        //                                });
+
+        // m_shader->bindObjectDescriptor(*getScene().getObjects().begin()->get(),
+        //                                "normalTexture",
+        //                                [](const pvk::geometry::Object &object, const pvk::geometry::Mesh &mesh) -> const pvk::engine::Descriptor & {
+        //                                    return mesh.getMaterial().getTexture("NORMAL");
+        //                                });
 
         auto treeWidget = std::make_unique<pvk::ui::TreeWidget>();
         treeWidget->setContent(*getScene().getObjects().begin()->get());
@@ -85,6 +92,7 @@ public:
     void update()
     {
         ubo.view = getCamera().getViewMatrix();
+        ubo.cameraPosition = getCamera().getPosition();
         m_bufferObject->update(&ubo);
     }
 

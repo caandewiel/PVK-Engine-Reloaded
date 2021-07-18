@@ -6,6 +6,7 @@
 #include <fstream>
 #include <iostream>
 #include <memory>
+#include <ostream>
 #include <stdexcept>
 #include <streambuf>
 #include <utility>
@@ -17,6 +18,7 @@
 #include <assimp/Importer.hpp>
 #include <assimp/material.h>
 #include <assimp/mesh.h>
+#include <assimp/pbrmaterial.h>
 #include <assimp/postprocess.h>
 #include <assimp/scene.h>
 #include <assimp/texture.h>
@@ -38,9 +40,9 @@
 #include "../lib/asset/AssetHelper.hpp"
 #include "../lib/asset/Blueprint.hpp"
 #include "../lib/asset/MaterialInfo.hpp"
+#include "../lib/asset/TextureMapping.hpp"
 
-constexpr auto assimpFlags =
-    aiProcess_OptimizeMeshes | aiProcess_GenNormals | aiProcess_FlipUVs | aiProcess_EmbedTextures;
+constexpr auto assimpFlags = aiProcess_OptimizeMeshes | aiProcess_GenNormals | aiProcess_FlipUVs;
 constexpr auto meshFlag = "MESH";
 // constexpr auto materialFlag = "MAT_";
 // constexpr auto textureFlag = "TEX ";
@@ -145,49 +147,47 @@ void loadMeshes(const aiScene *scene, const std::filesystem::path &destinationPa
 
 void loadTextures(const aiScene *scene, const std::filesystem::path &destinationPath)
 {
-    const auto textures = std::span(scene->mTextures, scene->mNumTextures);
 
-    for (size_t i = 0; i < textures.size(); i++)
-    {
-        const auto &texture = textures[i];
-        std::vector<unsigned char> textureBuffer;
+    // for (size_t i = 0; i < textures.size(); i++)
+    // {
+    //     const auto &texture = textures[i];
+    //     std::vector<unsigned char> textureBuffer;
 
-        // If height is 0, take only width
-        size_t textureBufferSize;
-        const auto textureFormat = std::string(texture->achFormatHint);
+    //     // If height is 0, take only width
+    //     size_t textureBufferSize;
+    //     const auto textureFormat = std::string(texture->achFormatHint);
 
-        if (texture->mHeight == 0 && (textureFormat == "png" || textureFormat == "jpg"))
-        {
-            textureBufferSize = static_cast<uint64_t>(texture->mWidth);
-            textureBuffer.resize(textureBufferSize);
-            memcpy(textureBuffer.data(), texture->pcData, textureBufferSize);
+    //     if (texture->mHeight == 0 && (textureFormat == "png" || textureFormat == "jpg"))
+    //     {
+    //         textureBufferSize = static_cast<uint64_t>(texture->mWidth);
+    //         textureBuffer.resize(textureBufferSize);
+    //         memcpy(textureBuffer.data(), texture->pcData, textureBufferSize);
 
-            auto destinationPathTexture =
-                destinationPath / std::filesystem::path(std::to_string(i)).replace_extension(textureFormat);
+    //         auto destinationPathTexture =
+    //             destinationPath / std::filesystem::path(std::to_string(i)).replace_extension(textureFormat);
 
-            std::ofstream binaryFile;
-            binaryFile.open(destinationPathTexture, std::ios::binary | std::ios::out);
-            binaryFile.write(reinterpret_cast<const char *>(textureBuffer.data()), textureBufferSize);
+    //         std::ofstream binaryFile;
+    //         binaryFile.open(destinationPathTexture, std::ios::binary | std::ios::out);
+    //         binaryFile.write(reinterpret_cast<const char *>(textureBuffer.data()), textureBufferSize);
 
-            std::cout << "Written texture to " << destinationPathTexture << "\n";
-        }
-        else
-        {
-            throw std::runtime_error("Unsupported texture format");
-        }
-    }
+    //         std::cout << "Written texture " << texture->mFilename.C_Str() << " to " << destinationPathTexture <<
+    //         "\n";
+    //     }
+    //     else
+    //     {
+    //         throw std::runtime_error("Unsupported texture format");
+    //     }
+    // }
 }
 
-constexpr std::array<std::pair<aiTextureType, const char *>, 2> textureTypes = {
-    {{aiTextureType_DIFFUSE, "diffuse"}, {aiTextureType_BASE_COLOR, "baseColor"}}};
-
-void loadMaterials(const aiScene *scene, const std::shared_ptr<pvk::asset::Blueprint> &blueprint)
+void loadMaterials(const aiScene *scene,
+                   const std::shared_ptr<pvk::asset::Blueprint> &blueprint,
+                   const std::filesystem::path &destinationPath,
+                   const std::filesystem::path &stem)
 {
     std::vector<nlohmann::json> materialInfos;
     const auto materials = std::span(scene->mMaterials, scene->mNumMaterials);
     auto currentMaterialIndex = 0;
-
-    const auto textures = std::span(scene->mTextures, scene->mNumTextures);
 
     for (const auto &material : materials)
     {
@@ -195,42 +195,41 @@ void loadMaterials(const aiScene *scene, const std::shared_ptr<pvk::asset::Bluep
         materialInfo.identifier = currentMaterialIndex;
         materialInfo.name = material->GetName().C_Str();
 
-        for (const auto &[textureType, textureIndex] : textureTypes)
+        for (auto &[textureType, textureTypeSerialized] : pvk::asset::textureTypeMappingSerialize)
         {
             aiString texturePath;
-            if (material->GetTextureCount(textureType) > 0)
-            {
-                material->GetTexture(textureType, 0, &texturePath);
 
-                std::filesystem::path destination;
+            if (material->GetTextureCount(aiTextureType(textureType)) > 0)
+            {
+                material->GetTexture(aiTextureType(textureType), 0, &texturePath);
+
+                std::filesystem::path destination = destinationPath;
 
                 if (std::filesystem::path(texturePath.C_Str()).string().substr(0, 1) == "*")
                 {
-                    destination = std::filesystem::path(texturePath.C_Str()).string().substr(1, 2);
+                    const auto *embeddedTexture = scene->GetEmbeddedTexture(texturePath.C_Str());
+
+                    // Embedded textures have no extension yet.
+                    destination /= std::filesystem::path(texturePath.C_Str()).string().substr(1, 2);
+                    destination.replace_extension(embeddedTexture->achFormatHint);
+
+                    std::ofstream output;
+                    output.open(destination, std::ios::binary | std::ios::out);
+                    output.write(reinterpret_cast<const char *>(embeddedTexture->pcData), embeddedTexture->mWidth);
+                    output.close();
                 }
                 else
                 {
-                    for (const auto &texture : textures)
-                    {
-                        std::cout << std::filesystem::path(texture->mFilename.C_Str()).string() << " - "
-                                  << std::string(texturePath.C_Str()) << "\n";
-                        if (std::filesystem::path(texture->mFilename.C_Str()).string() ==
-                            std::string(texturePath.C_Str()))
-                        {
-                        }
+                    const auto originalTexturePath = std::filesystem::path(texturePath.C_Str());
+                    destination /= originalTexturePath;
 
-                        // const char *shortTextureFilename = GetShortFilename(mTextures[i]->mFilename.C_Str());
-                        // if (strcmp(shortTextureFilename, shortFilename) == 0)
-                        // {
-                        //     return mTextures[i];
-                        // }
-                    }
+                    std::filesystem::create_directories(destinationPath / originalTexturePath.parent_path());
+                    std::filesystem::copy(destinationPath.parent_path() / originalTexturePath,
+                                          destinationPath / originalTexturePath,
+                                          std::filesystem::copy_options::skip_existing);
                 }
-                std::cout << destination.replace_extension(scene->GetEmbeddedTexture(texturePath.C_Str())->achFormatHint) << "\n";
 
-                materialInfo.textureData.insert({textureIndex,
-                                                 destination.replace_extension(
-                                                     scene->GetEmbeddedTexture(texturePath.C_Str())->achFormatHint)});
+                materialInfo.textureData.insert({textureTypeSerialized, destination});
             }
         }
 
@@ -290,7 +289,7 @@ void loadNodes(const aiScene *scene, const std::filesystem::path &destinationPat
 {
     auto blueprint = std::make_shared<pvk::asset::Blueprint>();
     loadNode(scene, scene->mRootNode, blueprint);
-    loadMaterials(scene, blueprint);
+    loadMaterials(scene, blueprint, destinationPath, stem);
 
     const auto meshes = std::span(scene->mMeshes, scene->mNumMeshes);
     for (const auto &mesh : meshes)

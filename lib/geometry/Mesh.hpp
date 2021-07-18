@@ -10,10 +10,14 @@
 #include "Material.hpp"
 #include "Vertex.hpp"
 
+#include "../engine/render_stage/Shader.hpp"
+#include "../engine/shader/Descriptor.hpp"
 #include "../vulkan/Buffer.hpp"
 
 namespace pvk::geometry
 {
+class Object;
+
 class Mesh : public Drawable
 {
 public:
@@ -48,6 +52,12 @@ public:
 
     [[nodiscard]] const geometry::Material &getMaterial() const;
     void setMaterial(std::weak_ptr<geometry::Material> material);
+
+    friend void engine::Shader::bindObjectDescriptor(
+        const geometry::Object &object,
+        const std::string &identifier,
+        const std::function<const engine::Descriptor &(const geometry::Object &object, const geometry::Mesh &mesh)>
+            &callback);
 
 private:
     std::unique_ptr<vulkan::Buffer> m_vertexBuffer;

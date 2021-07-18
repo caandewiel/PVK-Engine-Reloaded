@@ -29,13 +29,16 @@ void CameraArc::update(const vk::Extent2D &viewport, float deltaX, float deltaY)
     const auto angleX = static_cast<float>(2 * M_PI / viewport.width) * deltaX;
     const auto angleY = static_cast<float>(M_PI / viewport.height) * deltaY;
 
+    glm::vec3 forward = glm::normalize(m_position - m_lookAt);
+    glm::vec3 left = glm::normalize(glm::cross(m_up, forward));
+    m_up = glm::cross(forward, left);
     const glm::vec4 pivot = {m_lookAt, 1.0F};
     glm::vec4 position = {m_position, 1.0F};
 
     const auto rotationMatrixX = glm::rotate(glm::mat4(1.0F), -angleX, m_up);
     position = (rotationMatrixX * (position - pivot)) + pivot;
 
-    const auto rotationMatrixY = glm::rotate(glm::mat4(1.0F), angleY, m_right);
+    const auto rotationMatrixY = glm::rotate(glm::mat4(1.0F), angleY, left);
     position = (rotationMatrixY * (position - pivot)) + pivot;
 
     m_position = position;
@@ -46,7 +49,8 @@ void CameraArc::update(const vk::Extent2D &viewport, float deltaX, float deltaY)
 void CameraArc::updateViewMatrix()
 {
     m_viewMatrix = glm::lookAt(m_position, m_lookAt, m_up);
-    m_right = glm::transpose(m_viewMatrix)[0];
+    // m_right = glm::transpose(m_viewMatrix)[0];
+    // m_up = glm::cross(m_lookAt, m_right);
 }
 
 } // namespace pvk::engine

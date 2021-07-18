@@ -24,7 +24,7 @@ private:
     glm::vec3 m_position;
     glm::vec3 m_lookAt;
     glm::vec3 m_up;
-    glm::vec3 m_right;
+    // glm::vec3 m_right;
     glm::mat4 m_viewMatrix;
 };
 } // namespace pvk::engine

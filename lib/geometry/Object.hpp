@@ -7,11 +7,13 @@
 
 #include <absl/container/flat_hash_map.h>
 
+#include "../engine/render_stage/Shader.hpp"
+#include "../engine/shader/Descriptor.hpp"
+#include "../engine/shader/Texture.hpp"
 #include "Drawable.hpp"
 #include "Material.hpp"
 #include "Mesh.hpp"
 #include "Node.hpp"
-#include "../engine/shader/Texture.hpp"
 
 namespace pvk::geometry
 {
@@ -20,10 +22,7 @@ class Object : public Drawable
 public:
     Object(absl::flat_hash_map<uint32_t, std::shared_ptr<Mesh>> &&meshLookup,
            absl::flat_hash_map<uint32_t, std::shared_ptr<Node>> &&nodeLookup,
-           absl::flat_hash_map<uint32_t, std::shared_ptr<Material>> &&materialLookup,
-           absl::flat_hash_map<std::string, std::shared_ptr<engine::Texture>> &&textureLookup);
-
-    [[nodiscard]] const engine::Texture &getTexture(const std::string &textureIndex) const;
+           absl::flat_hash_map<uint32_t, std::shared_ptr<Material>> &&materialLookup);
 
     [[nodiscard]] const Mesh &getMesh(uint32_t meshIndex) const;
     [[nodiscard]] size_t getNumberOfMeshes() const;
@@ -38,11 +37,16 @@ public:
 
     [[nodiscard]] std::pair<glm::vec3, glm::vec3> getBounds() const;
 
+    friend void engine::Shader::bindObjectDescriptor(
+        const geometry::Object &object,
+        const std::string &identifier,
+        const std::function<const engine::Descriptor &(const geometry::Object &object, const geometry::Mesh &mesh)>
+            &callback);
+
 private:
     absl::flat_hash_map<uint32_t, std::shared_ptr<Mesh>> m_meshLookup{};
     absl::flat_hash_map<uint32_t, std::shared_ptr<Node>> m_nodeLookup{};
     absl::flat_hash_map<uint32_t, std::shared_ptr<Material>> m_materialLookup{};
-    absl::flat_hash_map<std::string, std::shared_ptr<engine::Texture>> m_textureLookup{};
     absl::flat_hash_map<std::string, void *> m_pushConstants{};
 
     glm::vec3 m_minBounds;
